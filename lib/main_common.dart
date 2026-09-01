@@ -7,15 +7,12 @@ import 'package:flutter_flavor/flutter_flavor.dart';
 import 'core/bloc/app_bloc_observer.dart';
 import 'core/constants/app_strings.dart';
 import 'core/di/injection_container.dart';
+import 'core/firebase/firebase_bootstrap.dart';
 import 'my_app.dart';
 import 'shared/wrappers/localization_wrapper.dart';
-import 'core/firebase/firebase_bootstrap.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 
 Future<void> mainCommon({required String name, required String baseUrl}) async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseBootstrap.initialize();
   if (kDebugMode) {
     Bloc.observer = AppBlocObserver();
