@@ -58,6 +58,8 @@ class ValidationFailure extends Failure {
 /// Maps [DioException] to the appropriate [Failure] (used by [safeCall]).
 Failure failureFromDioException(DioException exception) {
   switch (exception.type) {
+    case DioExceptionType.transformTimeout:
+      return const ServerFailure('Transform timeout with API server.');
     case DioExceptionType.connectionTimeout:
       return const ServerFailure('Connection timeout with API server.');
     case DioExceptionType.sendTimeout:

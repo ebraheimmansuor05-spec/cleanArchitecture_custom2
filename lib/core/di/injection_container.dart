@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 
+import '../../features/authentication/authentication_injection.dart';
 import '../../features/cart/cart_injection.dart';
 import '../../features/home/domain/entities/product/product_entity.dart';
 import '../../features/home/home_injection.dart';
@@ -49,6 +50,7 @@ Future<void> initCore() async {
   sl.registerLazySingleton<ApiConsumer>(() => DioConsumer(dio: sl<Dio>()));
 
   // Features
+  initAuthentication();
   initHome();
   initCart();
   initProfile();
