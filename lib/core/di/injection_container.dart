@@ -16,7 +16,9 @@ import '../network/dio_consumer.dart';
 import '../network/network_info.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/shared_prefs_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../storage/storage_keys.dart';
+import '../../features/workshop_users_roles/workshop_users_roles_injection.dart';
 
 final sl = GetIt.instance; // sl = Service Locator
 
@@ -38,9 +40,13 @@ Future<void> initCore() async {
   );
 
   initTheme();
-  // External
-  sl.registerLazySingleton(() => InternetConnection());
-  sl.registerLazySingleton(() => Dio());
+ // External
+sl.registerLazySingleton(() => InternetConnection());
+sl.registerLazySingleton(() => Dio());
+
+sl.registerLazySingleton<FirebaseFirestore>(
+  () => FirebaseFirestore.instance,
+);
 
   // Core
   sl.registerLazySingleton<NetworkInfo>(
@@ -54,4 +60,5 @@ Future<void> initCore() async {
   initHome();
   initCart();
   initProfile();
+  initWorkshopUsersRoles();
 }

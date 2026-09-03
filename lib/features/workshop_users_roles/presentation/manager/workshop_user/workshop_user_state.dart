@@ -14,12 +14,12 @@ class WorkshopUserInitial extends WorkshopUserState {}
 class WorkshopUserLoading extends WorkshopUserState {}
 
 class WorkshopUserLoaded extends WorkshopUserState {
-  final List<WorkshopUserEntity> items;
+ final List<WorkshopUserEntity> users;
 
-  const WorkshopUserLoaded(this.items);
+  const WorkshopUserLoaded(this.users);
 
   @override
-  List<Object?> get props => [items];
+  List<Object?> get props => [users];
 }
 
 class WorkshopUserError extends WorkshopUserState {
