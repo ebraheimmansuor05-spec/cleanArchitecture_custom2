@@ -11,6 +11,7 @@ import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/authentication/presentation/pages/register_page.dart';
 import '../../features/authentication/presentation/pages/session_check_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
+import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
 import '../../root.dart';
@@ -57,6 +58,11 @@ class AppRouterController {
           name: 'account-session',
           builder: (context, state) => const AccountSessionPage(),
         ),
+        GoRoute(
+          path: RouteNames.kDashboardPage,
+          name: 'dashboard',
+          builder: (context, state) => const DashboardPage(),
+        ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) {
             return RootPage(navigationShell: navigationShell);
@@ -67,6 +73,7 @@ class AppRouterController {
                 GoRoute(
                   path: RouteNames.kRootPage,
                   name: 'home',
+                  redirect: (context, state) => RouteNames.kDashboardPage,
                   builder: (context, state) => const HomePage(),
                 ),
               ],

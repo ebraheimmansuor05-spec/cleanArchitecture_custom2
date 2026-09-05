@@ -68,5 +68,74 @@
         "home": "Home",
         "cart": "Cart",
         "profile": "Profile"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "workshop_overview": "Workshop Overview",
+        "workshop_overview_subtitle": "Manage production, inventory & finances in real-time.",
+        "quick_actions": "Quick Actions",
+        "notifications_unread": "Unread notifications",
+        "actions": {
+            "menu": "Menu",
+            "notifications": "Notifications",
+            "new_order": "New Order",
+            "inventory": "Inventory",
+            "logs": "Logs",
+            "employees": "Employees",
+            "payment": "Payment",
+            "view_all": "View All",
+            "refill": "Refill",
+            "primary": "Main action",
+            "unavailable": "{action} is not available until its owning feature is connected."
+        },
+        "operations": {
+            "title": "Operations",
+            "live_updates": "Live Updates",
+            "live_preview": "Live Updates · Preview Data",
+            "todays_orders": "Today's Orders",
+            "late_orders": "Late Orders",
+            "in_progress": "In Progress",
+            "low_stock": "Low Stock",
+            "pending_pickup": "4 pending pickup",
+            "action_required": "Action required",
+            "workshop_floor": "Workshop floor",
+            "aluminum_extrusions": "Aluminum extrusions"
+        },
+        "financial": {
+            "title": "Financial Summary",
+            "subtitle": "Performance for current billing cycle",
+            "total_revenue": "Total Revenue",
+            "pending_payments": "Pending Payments",
+            "revenue_goal": "Revenue Goal",
+            "achieved": "Achieved"
+        },
+        "activity": {
+            "title": "Worker Activity",
+            "welding_completed": "Completed welding on Project #822 - Hotel Frames",
+            "measurements_updated": "Updated measurements for Villa Terrace Doors",
+            "production_started": "Started production on Project #845 - Office Windows",
+            "time_12m": "12m ago",
+            "time_45m": "45m ago",
+            "time_1h": "1h ago"
+        },
+        "inventory_alert": {
+            "title": "Critical Inventory Alert",
+            "message": "{count} profiles are below the minimum safety threshold. Order replenishment immediately."
+        },
+        "navigation": {
+            "home": "Home",
+            "orders": "Orders",
+            "production": "Production",
+            "stock": "Stock",
+            "profile": "Profile"
+        },
+        "states": {
+            "empty_title": "No dashboard data",
+            "empty_message": "Dashboard information is not available for the current context.",
+            "failure_title": "Dashboard unavailable",
+            "failure_message": "Dashboard information could not be displayed. Please try again.",
+            "partial_message": "Some dashboard sections are unavailable. Available information is still shown.",
+            "retry": "Try again"
+        }
     }
 }

@@ -68,5 +68,74 @@
         "home": "الرئيسية",
         "cart": "السلة",
         "profile": "الملف الشخصي"
+    },
+    "dashboard": {
+        "title": "لوحة التحكم",
+        "workshop_overview": "نظرة عامة على الورشة",
+        "workshop_overview_subtitle": "إدارة الإنتاج والمخزون والشؤون المالية في الوقت الفعلي.",
+        "quick_actions": "الإجراءات السريعة",
+        "notifications_unread": "إشعارات غير مقروءة",
+        "actions": {
+            "menu": "القائمة",
+            "notifications": "الإشعارات",
+            "new_order": "طلب جديد",
+            "inventory": "المخزون",
+            "logs": "السجلات",
+            "employees": "العاملون",
+            "payment": "دفعة",
+            "view_all": "عرض الكل",
+            "refill": "إعادة التعبئة",
+            "primary": "الإجراء الرئيسي",
+            "unavailable": "{action} غير متاح حتى يتم ربط الميزة المسؤولة عنه."
+        },
+        "operations": {
+            "title": "العمليات",
+            "live_updates": "تحديثات مباشرة",
+            "live_preview": "تحديثات مباشرة · بيانات معاينة",
+            "todays_orders": "طلبات اليوم",
+            "late_orders": "الطلبات المتأخرة",
+            "in_progress": "قيد التنفيذ",
+            "low_stock": "مخزون منخفض",
+            "pending_pickup": "4 بانتظار الاستلام",
+            "action_required": "يتطلب إجراءً",
+            "workshop_floor": "أرضية الورشة",
+            "aluminum_extrusions": "قطاعات الألومنيوم"
+        },
+        "financial": {
+            "title": "الملخص المالي",
+            "subtitle": "أداء دورة الفوترة الحالية",
+            "total_revenue": "إجمالي الإيرادات",
+            "pending_payments": "المدفوعات المعلقة",
+            "revenue_goal": "هدف الإيرادات",
+            "achieved": "مُحقق"
+        },
+        "activity": {
+            "title": "نشاط العاملين",
+            "welding_completed": "أكمل اللحام في المشروع #822 - إطارات الفندق",
+            "measurements_updated": "حدّث مقاسات أبواب تراس الفيلا",
+            "production_started": "بدأ الإنتاج في المشروع #845 - نوافذ المكتب",
+            "time_12m": "منذ 12 د",
+            "time_45m": "منذ 45 د",
+            "time_1h": "منذ ساعة"
+        },
+        "inventory_alert": {
+            "title": "تنبيه حرج للمخزون",
+            "message": "هناك {count} قطاعات دون الحد الأدنى الآمن. اطلب إعادة التوريد فورًا."
+        },
+        "navigation": {
+            "home": "الرئيسية",
+            "orders": "الطلبات",
+            "production": "الإنتاج",
+            "stock": "المخزون",
+            "profile": "الملف الشخصي"
+        },
+        "states": {
+            "empty_title": "لا توجد بيانات للوحة التحكم",
+            "empty_message": "معلومات لوحة التحكم غير متاحة للسياق الحالي.",
+            "failure_title": "لوحة التحكم غير متاحة",
+            "failure_message": "تعذر عرض معلومات لوحة التحكم. حاول مرة أخرى.",
+            "partial_message": "بعض أقسام لوحة التحكم غير متاحة. ما زالت المعلومات المتاحة معروضة.",
+            "retry": "حاول مرة أخرى"
+        }
     }
 }

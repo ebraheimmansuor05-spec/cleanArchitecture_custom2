@@ -4,6 +4,7 @@ class RouteNames {
   static const kRegisterPage = '/register';
   static const kForgotPasswordPage = '/forgot-password';
   static const kAccountSessionPage = '/account-session';
+  static const kDashboardPage = '/dashboard';
   static const kRootPage = '/';
   static const kHomePage = '/home';
   static const kCartPage = '/cart';
