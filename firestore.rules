@@ -1,0 +1,30 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isWorkshopMember(workshopId) {
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/workshops/$(workshopId)/members/$(request.auth.uid)
+        );
+    }
+
+    match /workshops/{workshopId} {
+
+      match /members/{memberId} {
+        allow read: if isWorkshopMember(workshopId);
+        allow create, update, delete: if false;
+      }
+
+      match /roles/{roleId} {
+        allow read: if isWorkshopMember(workshopId);
+        allow create, update, delete: if false;
+      }
+    }
+  }
+}

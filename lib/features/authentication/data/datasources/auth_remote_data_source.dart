@@ -1,82 +1,121 @@
+// lib/features/authentication/data/datasources/auth_remote_data_source.dart
+
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../models/auth_user_model.dart';
+import '../../domain/entities/auth_user_entity.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<AuthUserModel> login({
+  Future<AuthUserEntity> login({
     required String email,
     required String password,
   });
 
-  Future<AuthUserModel> register({
+  Future<AuthUserEntity> register({
     required String email,
     required String password,
+    required String displayName,
   });
 
   Future<void> sendPasswordResetEmail(String email);
-
   Future<void> logout();
+  Future<AuthUserEntity?> getCurrentUser();
+  Stream<AuthUserEntity?> observeAuthState();
 
-  AuthUserModel? getCurrentUser();
+  // ✅ جديد: إنشاء مستخدم للعامل
+  Future<AuthUserEntity> createUserWithEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  });
 
-  Stream<AuthUserModel?> observeAuthState();
+  // ✅ جديد: حذف مستخدم
+  Future<void> deleteUser(String userId);
 }
 
 class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
-  final FirebaseAuth firebaseAuth;
+  final FirebaseAuth _firebaseAuth;
 
-  const FirebaseAuthRemoteDataSource(this.firebaseAuth);
+  const FirebaseAuthRemoteDataSource(this._firebaseAuth);
 
   @override
-  Future<AuthUserModel> login({
+  Future<AuthUserEntity> login({
     required String email,
     required String password,
   }) async {
-    final credential = await firebaseAuth.signInWithEmailAndPassword(
+    final credential = await _firebaseAuth.signInWithEmailAndPassword(
       email: email,
       password: password,
     );
-    final user = credential.user;
-    if (user == null) {
-      throw StateError('Authentication provider returned no user.');
-    }
-    return AuthUserModel.fromFirebaseUser(user);
+    return _toEntity(credential.user!);
   }
 
   @override
-  Future<AuthUserModel> register({
+  Future<AuthUserEntity> register({
     required String email,
     required String password,
+    required String displayName,
   }) async {
-    final credential = await firebaseAuth.createUserWithEmailAndPassword(
+    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
       email: email,
       password: password,
     );
-    final user = credential.user;
-    if (user == null) {
-      throw StateError('Authentication provider returned no user.');
+    await credential.user?.updateDisplayName(displayName);
+    await credential.user?.reload();
+    return _toEntity(_firebaseAuth.currentUser!);
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    await _firebaseAuth.sendPasswordResetEmail(email: email);
+  }
+
+  @override
+  Future<void> logout() async {
+    await _firebaseAuth.signOut();
+  }
+
+  @override
+  Future<AuthUserEntity?> getCurrentUser() async {
+    final user = _firebaseAuth.currentUser;
+    return user != null ? _toEntity(user) : null;
+  }
+
+  @override
+  Stream<AuthUserEntity?> observeAuthState() {
+    return _firebaseAuth.authStateChanges().map((user) {
+      return user != null ? _toEntity(user) : null;
+    });
+  }
+
+  @override
+  Future<AuthUserEntity> createUserWithEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    final credential = await _firebaseAuth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+    await credential.user?.updateDisplayName(displayName);
+    await credential.user?.reload();
+    return _toEntity(_firebaseAuth.currentUser!);
+  }
+
+  @override
+  Future<void> deleteUser(String userId) async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null && user.uid == userId) {
+      await user.delete();
     }
-    return AuthUserModel.fromFirebaseUser(user);
   }
 
-  @override
-  Future<void> sendPasswordResetEmail(String email) {
-    return firebaseAuth.sendPasswordResetEmail(email: email);
-  }
-
-  @override
-  Future<void> logout() => firebaseAuth.signOut();
-
-  @override
-  AuthUserModel? getCurrentUser() {
-    final user = firebaseAuth.currentUser;
-    return user == null ? null : AuthUserModel.fromFirebaseUser(user);
-  }
-
-  @override
-  Stream<AuthUserModel?> observeAuthState() {
-    return firebaseAuth.authStateChanges().map(
-      (user) => user == null ? null : AuthUserModel.fromFirebaseUser(user),
+  AuthUserEntity _toEntity(User user) {
+    return AuthUserEntity(
+      id: user.uid,
+      email: user.email,
+      displayName: user.displayName,
+      isEmailVerified: user.emailVerified,
     );
   }
 }

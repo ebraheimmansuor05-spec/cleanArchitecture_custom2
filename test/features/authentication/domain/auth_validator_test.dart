@@ -1,4 +1,5 @@
 import 'package:flutter_clean_architecture_template/features/authentication/domain/entities/auth_failure.dart';
+import 'package:flutter_clean_architecture_template/features/authentication/domain/enums/account_type.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/params/auth_credentials.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/validators/auth_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,6 +37,8 @@ void main() {
           email: 'owner@kitchenflow.test',
           password: 'password',
           confirmPassword: 'different',
+          workshopName: 'Test Workshop',
+          accountType: AccountType.owner,
         ),
       );
 
@@ -44,5 +47,18 @@ void main() {
         AuthValidationCode.passwordsDoNotMatch,
       );
     });
+    test('does not require workshop name for worker', () {
+  final errors = AuthValidator.validateRegistration(
+    const RegistrationCredentials(
+      email: 'worker@example.com',
+      password: '123456',
+      confirmPassword: '123456',
+      workshopName: '',
+      accountType: AccountType.worker,
+    ),
+  );
+
+  expect(errors.containsKey(AuthField.workshopName), isFalse);
+});
   });
 }

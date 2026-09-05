@@ -8,7 +8,6 @@ abstract class WorkshopRepository {
     WorkshopEntity workshop,
   );
 
-  Future<Either<Failure, WorkshopEntity>> getWorkshop(
-    String workshopId,
-  );
+  Future<Either<Failure, WorkshopEntity>> getWorkshop(String workshopId);
+  Future<Either<Failure, WorkshopEntity>> getWorkshopByOwnerId(String ownerId);
 }

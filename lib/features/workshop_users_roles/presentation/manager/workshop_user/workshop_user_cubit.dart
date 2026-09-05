@@ -1,3 +1,5 @@
+// lib/features/workshop_users_roles/presentation/manager/workshop_user/workshop_user_cubit.dart
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../shared/mixin/cancelable_safe_cubit_mixin.dart';
@@ -20,6 +22,10 @@ class WorkshopUserCubit extends Cubit<WorkshopUserState>
 
     if (result == null) return;
 
-    safeEmit(WorkshopUserLoaded(result));
+    // ✅ استخدم fold بدلاً من تمرير Either مباشرة
+    result.fold(
+      (failure) => safeEmit(WorkshopUserError(failure.message)),
+      (users) => safeEmit(WorkshopUserLoaded(users)),
+    );
   }
 }

@@ -1,20 +1,19 @@
+// lib/features/authentication/presentation/manager/authentication_state.dart
+
 import 'package:equatable/equatable.dart';
 
 import '../../domain/entities/auth_failure.dart';
 import '../../domain/entities/auth_user_entity.dart';
+import 'authentication_cubit.dart';
 
-enum AuthenticationAction { login, register, passwordReset }
-
-sealed class AuthenticationState extends Equatable {
+abstract class AuthenticationState extends Equatable {
   const AuthenticationState();
 
   @override
   List<Object?> get props => [];
 }
 
-class AuthenticationInitial extends AuthenticationState {
-  const AuthenticationInitial();
-}
+class AuthenticationInitial extends AuthenticationState {}
 
 class AuthenticationLoading extends AuthenticationState {
   final AuthenticationAction action;
@@ -29,7 +28,10 @@ class AuthenticationSuccess extends AuthenticationState {
   final AuthenticationAction action;
   final AuthUserEntity? user;
 
-  const AuthenticationSuccess(this.action, {this.user});
+  const AuthenticationSuccess(
+    this.action, {
+    this.user,
+  });
 
   @override
   List<Object?> get props => [action, user];

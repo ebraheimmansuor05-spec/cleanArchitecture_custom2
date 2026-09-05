@@ -1,3 +1,5 @@
+// lib/features/workshop_users_roles/domain/entities/workshop_user_entity.dart
+
 import 'package:equatable/equatable.dart';
 
 import '../enums/workshop_member_status.dart';
@@ -9,6 +11,7 @@ class WorkshopUserEntity extends Equatable {
   final String roleId;
   final WorkshopMemberStatus status;
   final DateTime joinedAt;
+  final String? workerId;
 
   const WorkshopUserEntity({
     required this.id,
@@ -17,6 +20,7 @@ class WorkshopUserEntity extends Equatable {
     required this.roleId,
     required this.status,
     required this.joinedAt,
+    this.workerId,
   });
 
   @override
@@ -27,5 +31,6 @@ class WorkshopUserEntity extends Equatable {
         roleId,
         status,
         joinedAt,
+        workerId,
       ];
 }

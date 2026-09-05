@@ -1,3 +1,5 @@
+// lib/features/authentication/presentation/localization/auth_localization.dart
+
 import '../../domain/entities/auth_failure.dart';
 
 String authErrorLocalizationKey(AuthErrorCode code) {
@@ -15,6 +17,10 @@ String authErrorLocalizationKey(AuthErrorCode code) {
       'authentication.errors.operation_not_allowed',
     AuthErrorCode.sessionExpired => 'authentication.errors.session_expired',
     AuthErrorCode.unknown => 'authentication.errors.unknown',
+    // ✅ إضافة الحالات الجديدة
+    AuthErrorCode.userNotFound => 'authentication.errors.user_not_found',
+    AuthErrorCode.wrongPassword => 'authentication.errors.wrong_password',
+    AuthErrorCode.accountSuspended => 'authentication.errors.account_suspended',
   };
 }
 
@@ -25,5 +31,7 @@ String authValidationLocalizationKey(AuthValidationCode code) {
       'authentication.validation.invalid_email',
     AuthValidationCode.passwordsDoNotMatch =>
       'authentication.validation.passwords_do_not_match',
+    // ✅ إضافة الحالة الجديدة
+    AuthValidationCode.invalidPhone => 'authentication.validation.invalid_phone',
   };
 }

@@ -1,3 +1,5 @@
+// lib/features/authentication/domain/entities/auth_failure.dart
+
 import '../../../../core/errors/failures.dart';
 
 enum AuthErrorCode {
@@ -11,11 +13,15 @@ enum AuthErrorCode {
   operationNotAllowed,
   sessionExpired,
   unknown,
+  // ✅ إضافة القيم الجديدة
+  userNotFound,
+  wrongPassword,
+  accountSuspended,
 }
 
-enum AuthField { email, password, confirmPassword }
+enum AuthField { email, password, confirmPassword, workshopName, phone, roleId }
 
-enum AuthValidationCode { required, invalidEmail, passwordsDoNotMatch }
+enum AuthValidationCode { required, invalidEmail, passwordsDoNotMatch, invalidPhone }
 
 class AuthenticationFailure extends AuthFailure {
   final AuthErrorCode code;

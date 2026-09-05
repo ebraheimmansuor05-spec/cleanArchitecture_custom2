@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/data/repositories/auth_repository_impl.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/entities/auth_failure.dart';
+import 'package:flutter_clean_architecture_template/features/authentication/domain/enums/account_type.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/params/auth_credentials.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -53,10 +54,12 @@ void main() {
     );
 
     final result = await repository.register(
-      const RegistrationCredentials(
+       RegistrationCredentials(
         email: 'owner@kitchenflow.test',
         password: 'password',
-        confirmPassword: 'password',
+        confirmPassword: 'password', 
+        workshopName: 'Test Workshop',
+        accountType: AccountType.owner,
       ),
     );
 

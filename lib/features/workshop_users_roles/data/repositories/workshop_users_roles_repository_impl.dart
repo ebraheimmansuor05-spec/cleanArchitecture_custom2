@@ -1,105 +1,66 @@
-import '../../domain/entities/role_entity.dart';
-import '../../domain/entities/workshop_entity.dart';
+// lib/features/workshop_users_roles/data/repositories/workshop_users_roles_repository_impl.dart
+
+import 'package:dartz/dartz.dart';
+
+import '../../../../core/errors/failures.dart';
 import '../../domain/entities/workshop_user_entity.dart';
 import '../../domain/repositories/workshop_users_roles_repository.dart';
 import '../datasources/workshop_users_roles_remote_data_source.dart';
-import '../models/role_model.dart';
-import '../models/workshop_model.dart';
+import '../models/workshop_user_model.dart';
 
-class WorkshopUsersRolesRepositoryImpl
-    implements WorkshopUsersRolesRepository {
+class WorkshopUsersRolesRepositoryImpl implements WorkshopUsersRolesRepository {
   final WorkshopUsersRolesRemoteDataSource _remoteDataSource;
 
-  WorkshopUsersRolesRepositoryImpl(this._remoteDataSource);
+  const WorkshopUsersRolesRepositoryImpl(this._remoteDataSource);
 
   @override
-  Future<List<WorkshopUserEntity>> fetchWorkshopUsers(
+  Future<Either<Failure, List<WorkshopUserEntity>>> getWorkshopUsers(
     String workshopId,
   ) async {
-    final models = await _remoteDataSource.fetchWorkshopUsers(
-      workshopId,
-    );
-
-    return models;
+    try {
+      final models = await _remoteDataSource.getWorkshopUsers(workshopId);
+      return Right(models.map((model) => model.toEntity()).toList());
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
   }
 
   @override
-  Future<List<RoleEntity>> fetchRoles(
-    String workshopId,
+  Future<Either<Failure, WorkshopUserEntity>> createWorkshopUser(
+    WorkshopUserEntity entity, {
+    required String workerId,
+  }) async {
+    try {
+      final model = WorkshopUserModel(
+        id: entity.id,
+        workshopId: entity.workshopId,
+        userId: entity.userId,
+        roleId: entity.roleId,
+        status: entity.status,
+        joinedAt: entity.joinedAt,
+        workerId: workerId,
+      );
+
+      final created = await _remoteDataSource.createWorkshopUser(
+        model,
+        workerId: workerId,
+      );
+
+      return Right(created.toEntity());
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, WorkshopUserEntity?>> getWorkshopUserByUserId(
+    String userId,
   ) async {
-    final models = await _remoteDataSource.fetchRoles(
-      workshopId,
-    );
-
-    return models;
-  }
-
-  @override
-  Future<RoleEntity> createRole(
-    RoleEntity role,
-  ) async {
-    final model = RoleModel(
-      id: role.id,
-      workshopId: role.workshopId,
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions,
-      isSystemRole: role.isSystemRole,
-      createdAt: role.createdAt,
-      updatedAt: role.updatedAt,
-    );
-
-    return _remoteDataSource.createRole(model);
-  }
-
-  @override
-  Future<RoleEntity> updateRole(
-    RoleEntity role,
-  ) async {
-    final model = RoleModel(
-      id: role.id,
-      workshopId: role.workshopId,
-      name: role.name,
-      description: role.description,
-      permissions: role.permissions,
-      isSystemRole: role.isSystemRole,
-      createdAt: role.createdAt,
-      updatedAt: role.updatedAt,
-    );
-
-    return _remoteDataSource.updateRole(model);
-  }
-
-  @override
-  Future<void> deleteRole(
-    String workshopId,
-    String roleId,
-  ) {
-    return _remoteDataSource.deleteRole(
-      workshopId,
-      roleId,
-    );
-  }
-
-  @override
-  Future<WorkshopEntity> createWorkshop(
-    WorkshopEntity workshop,
-  ) async {
-    final model = WorkshopModel(
-      id: workshop.id,
-      ownerId: workshop.ownerId,
-      name: workshop.name,
-      createdAt: workshop.createdAt,
-      updatedAt: workshop.updatedAt,
-    );
-
-    return _remoteDataSource.createWorkshop(model);
-  }
-
-  @override
-  Future<WorkshopEntity> getWorkshop(
-    String workshopId,
-  ) {
-    return _remoteDataSource.getWorkshop(workshopId);
+    try {
+      final model = await _remoteDataSource.getWorkshopUserByUserId(userId);
+      return Right(model?.toEntity());
+    } catch (e) {
+      return Left(AuthFailure(e.toString()));
+    }
   }
 }

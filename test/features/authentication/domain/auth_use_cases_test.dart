@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/entities/auth_failure.dart';
+import 'package:flutter_clean_architecture_template/features/authentication/domain/enums/account_type.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/params/auth_credentials.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/usecases/auth_use_cases.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +44,8 @@ void main() {
         email: 'owner@kitchenflow.test',
         password: 'password',
         confirmPassword: 'password',
+        workshopName: 'Test Workshop',
+        accountType: AccountType.owner,
       ),
     );
 

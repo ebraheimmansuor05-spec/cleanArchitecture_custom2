@@ -13,16 +13,19 @@ import '../../features/authentication/presentation/pages/session_check_page.dart
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
+import '../../features/workshop_users_roles/presentation/pages/workshop_users_roles_page.dart';
 import '../../root.dart';
 import 'route_names.dart';
 
 class AppRouterController {
   final SessionCubit sessionCubit;
+
   late final _SessionRefreshNotifier _refreshNotifier;
   late final GoRouter router;
 
   AppRouterController(this.sessionCubit) {
     _refreshNotifier = _SessionRefreshNotifier(sessionCubit.stream);
+
     router = GoRouter(
       navigatorKey: GlobalKey<NavigatorState>(),
       initialLocation: RouteNames.kSessionCheckPage,
@@ -57,9 +60,12 @@ class AppRouterController {
           name: 'account-session',
           builder: (context, state) => const AccountSessionPage(),
         ),
+
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) {
-            return RootPage(navigationShell: navigationShell);
+            return RootPage(
+              navigationShell: navigationShell,
+            );
           },
           branches: [
             StatefulShellBranch(
@@ -68,9 +74,19 @@ class AppRouterController {
                   path: RouteNames.kRootPage,
                   name: 'home',
                   builder: (context, state) => const HomePage(),
+                  routes: [
+                    GoRoute(
+                      path: 'workshop-users-roles',
+                      name: 'workshop-users-roles',
+                      builder: (context, state) {
+                        return const WorkshopUsersRolesPage();
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
+
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -80,6 +96,7 @@ class AppRouterController {
                 ),
               ],
             ),
+
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -107,7 +124,9 @@ String? authenticationRedirect({
 }) {
   final isChecking =
       sessionState is SessionInitial || sessionState is SessionChecking;
+
   final isSessionCheck = location == RouteNames.kSessionCheckPage;
+
   final isPublic =
       location == RouteNames.kLoginPage ||
       location == RouteNames.kRegisterPage ||
@@ -121,6 +140,7 @@ String? authenticationRedirect({
     if (isSessionCheck || isPublic) {
       return RouteNames.kAccountSessionPage;
     }
+
     return null;
   }
 
@@ -131,7 +151,9 @@ class _SessionRefreshNotifier extends ChangeNotifier {
   late final StreamSubscription<SessionState> _subscription;
 
   _SessionRefreshNotifier(Stream<SessionState> stream) {
-    _subscription = stream.listen((_) => notifyListeners());
+    _subscription = stream.listen(
+      (_) => notifyListeners(),
+    );
   }
 
   @override

@@ -7,7 +7,8 @@ import 'package:flutter_clean_architecture_template/features/authentication/data
 import 'package:flutter_clean_architecture_template/features/authentication/domain/entities/auth_user_entity.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/params/auth_credentials.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/repositories/auth_repository.dart';
-
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/entities/workshop_entity.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/repositories/workshop_repository.dart';
 const testUser = AuthUserEntity(
   id: 'user-1',
   email: 'owner@kitchenflow.test',
@@ -21,6 +22,72 @@ const testUserModel = AuthUserModel(
   displayName: null,
   isEmailVerified: true,
 );
+class FakeWorkshopRepository implements WorkshopRepository {
+  Either<Failure, WorkshopEntity> createWorkshopResult = Right(
+    WorkshopEntity(
+      id: 'workshop-1',
+      ownerId: 'user-1',
+      name: 'Test Workshop',
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+    ),
+  );
+
+  Either<Failure, WorkshopEntity> getWorkshopResult = Right(
+    WorkshopEntity(
+      id: 'workshop-1',
+      ownerId: 'user-1',
+      name: 'Test Workshop',
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+    ),
+  );
+
+  Either<Failure, WorkshopEntity> getWorkshopByOwnerIdResult = Right(
+    WorkshopEntity(
+      id: 'workshop-1',
+      ownerId: 'user-1',
+      name: 'Test Workshop',
+      createdAt: DateTime(2026, 1, 1),
+      updatedAt: DateTime(2026, 1, 1),
+    ),
+  );
+
+  int createWorkshopCalls = 0;
+  int getWorkshopCalls = 0;
+  int getWorkshopByOwnerIdCalls = 0;
+
+  WorkshopEntity? lastCreatedWorkshop;
+  String? lastWorkshopId;
+  String? lastOwnerId;
+
+  @override
+  Future<Either<Failure, WorkshopEntity>> createWorkshop(
+    WorkshopEntity workshop,
+  ) async {
+    createWorkshopCalls++;
+    lastCreatedWorkshop = workshop;
+    return createWorkshopResult;
+  }
+
+  @override
+  Future<Either<Failure, WorkshopEntity>> getWorkshop(
+    String workshopId,
+  ) async {
+    getWorkshopCalls++;
+    lastWorkshopId = workshopId;
+    return getWorkshopResult;
+  }
+
+  @override
+  Future<Either<Failure, WorkshopEntity>> getWorkshopByOwnerId(
+    String ownerId,
+  ) async {
+    getWorkshopByOwnerIdCalls++;
+    lastOwnerId = ownerId;
+    return getWorkshopByOwnerIdResult;
+  }
+}
 
 class FakeAuthRepository implements AuthRepository {
   Either<Failure, AuthUserEntity> loginResult = const Right(testUser);

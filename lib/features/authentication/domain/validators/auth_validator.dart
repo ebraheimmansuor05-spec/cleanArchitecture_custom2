@@ -1,4 +1,7 @@
+// lib/features/authentication/domain/validators/auth_validator.dart
+
 import '../entities/auth_failure.dart';
+import '../enums/account_type.dart';
 import '../params/auth_credentials.dart';
 
 abstract final class AuthValidator {
@@ -12,10 +15,13 @@ abstract final class AuthValidator {
     LoginCredentials credentials,
   ) {
     final errors = <AuthField, AuthValidationCode>{};
+
     _validateEmail(credentials.email, errors);
+
     if (credentials.password.isEmpty) {
       errors[AuthField.password] = AuthValidationCode.required;
     }
+
     return errors;
   }
 
@@ -23,16 +29,25 @@ abstract final class AuthValidator {
     RegistrationCredentials credentials,
   ) {
     final errors = <AuthField, AuthValidationCode>{};
+
     _validateEmail(credentials.email, errors);
+
     if (credentials.password.isEmpty) {
       errors[AuthField.password] = AuthValidationCode.required;
     }
+
     if (credentials.confirmPassword.isEmpty) {
       errors[AuthField.confirmPassword] = AuthValidationCode.required;
     } else if (credentials.password != credentials.confirmPassword) {
       errors[AuthField.confirmPassword] =
           AuthValidationCode.passwordsDoNotMatch;
     }
+
+    if (credentials.accountType == AccountType.owner &&
+      (credentials.workshopName?.trim().isEmpty ?? true)) {
+      errors[AuthField.workshopName] = AuthValidationCode.required;
+    }
+
     return errors;
   }
 
@@ -40,7 +55,9 @@ abstract final class AuthValidator {
     String email,
   ) {
     final errors = <AuthField, AuthValidationCode>{};
+
     _validateEmail(email, errors);
+
     return errors;
   }
 
