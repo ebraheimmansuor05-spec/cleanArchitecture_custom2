@@ -1,5 +1,3 @@
-// lib/features/authentication/data/repositories/auth_repository_impl.dart
-
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -24,11 +22,16 @@ class AuthRepositoryImpl implements AuthRepository {
         email: credentials.email,
         password: credentials.password,
       );
-      return Right(user);
+
+      return Right(user.toEntity());
     } on FirebaseAuthException catch (e) {
       return Left(_mapFirebaseException(e));
-    } catch (e) {
-      return Left(AuthFailure(e.toString()));
+    } catch (_) {
+      return const Left(
+        AuthenticationFailure(
+          AuthErrorCode.unknown,
+        ),
+      );
     }
   }
 
@@ -42,23 +45,35 @@ class AuthRepositoryImpl implements AuthRepository {
         password: credentials.password,
         displayName: credentials.email.split('@').first,
       );
-      return Right(user);
+
+      return Right(user.toEntity());
     } on FirebaseAuthException catch (e) {
       return Left(_mapFirebaseException(e));
-    } catch (e) {
-      return Left(AuthFailure(e.toString()));
+    } catch (_) {
+      return const Left(
+        AuthenticationFailure(
+          AuthErrorCode.unknown,
+        ),
+      );
     }
   }
 
   @override
-  Future<Either<Failure, Unit>> sendPasswordResetEmail(String email) async {
+  Future<Either<Failure, Unit>> sendPasswordResetEmail(
+    String email,
+  ) async {
     try {
       await _remoteDataSource.sendPasswordResetEmail(email);
+
       return const Right(unit);
     } on FirebaseAuthException catch (e) {
       return Left(_mapFirebaseException(e));
-    } catch (e) {
-      return Left(AuthFailure(e.toString()));
+    } catch (_) {
+      return const Left(
+        AuthenticationFailure(
+          AuthErrorCode.unknown,
+        ),
+      );
     }
   }
 
@@ -66,9 +81,16 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, Unit>> logout() async {
     try {
       await _remoteDataSource.logout();
+
       return const Right(unit);
-    } catch (e) {
-      return Left(AuthFailure(e.toString()));
+    } on FirebaseAuthException catch (e) {
+      return Left(_mapFirebaseException(e));
+    } catch (_) {
+      return const Left(
+        AuthenticationFailure(
+          AuthErrorCode.unknown,
+        ),
+      );
     }
   }
 
@@ -76,18 +98,33 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, AuthUserEntity?>> getCurrentUser() async {
     try {
       final user = await _remoteDataSource.getCurrentUser();
-      return Right(user);
-    } catch (e) {
-      return Left(AuthFailure(e.toString()));
+
+      return Right(user?.toEntity());
+    } catch (_) {
+      return const Left(
+        AuthenticationFailure(
+          AuthErrorCode.unknown,
+        ),
+      );
     }
   }
 
   @override
   Stream<Either<Failure, AuthUserEntity?>> observeAuthState() {
     try {
-      return _remoteDataSource.observeAuthState().map((user) => Right(user));
-    } catch (e) {
-      return Stream.value(Left(AuthFailure(e.toString())));
+      return _remoteDataSource.observeAuthState().map(
+        (user) => Right<Failure, AuthUserEntity?>(
+          user?.toEntity(),
+        ),
+      );
+    } catch (_) {
+      return Stream.value(
+        const Left<Failure, AuthUserEntity?>(
+          AuthenticationFailure(
+            AuthErrorCode.unknown,
+          ),
+        ),
+      );
     }
   }
 
@@ -103,11 +140,16 @@ class AuthRepositoryImpl implements AuthRepository {
         password: password,
         displayName: displayName,
       );
-      return Right(user);
+
+      return Right(user.toEntity());
     } on FirebaseAuthException catch (e) {
       return Left(_mapFirebaseException(e));
-    } catch (e) {
-      return Left(AuthFailure(e.toString()));
+    } catch (_) {
+      return const Left(
+        AuthenticationFailure(
+          AuthErrorCode.unknown,
+        ),
+      );
     }
   }
 
@@ -115,11 +157,16 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Either<Failure, Unit>> deleteUser(String userId) async {
     try {
       await _remoteDataSource.deleteUser(userId);
+
       return const Right(unit);
     } on FirebaseAuthException catch (e) {
       return Left(_mapFirebaseException(e));
-    } catch (e) {
-      return Left(AuthFailure(e.toString()));
+    } catch (_) {
+      return const Left(
+        AuthenticationFailure(
+          AuthErrorCode.unknown,
+        ),
+      );
     }
   }
 
@@ -130,38 +177,54 @@ class AuthRepositoryImpl implements AuthRepository {
           AuthErrorCode.userNotFound,
           e.message ?? 'المستخدم غير موجود',
         );
+
       case 'wrong-password':
         return AuthenticationFailure(
           AuthErrorCode.wrongPassword,
           e.message ?? 'كلمة المرور غير صحيحة',
         );
+
+      case 'invalid-credential':
+        return AuthenticationFailure(
+          AuthErrorCode.invalidCredentials,
+          e.message ?? 'بيانات تسجيل الدخول غير صحيحة',
+        );
+
       case 'email-already-in-use':
         return AuthenticationFailure(
           AuthErrorCode.emailAlreadyInUse,
           e.message ?? 'البريد الإلكتروني مستخدم مسبقاً',
         );
+
       case 'invalid-email':
         return AuthenticationFailure(
           AuthErrorCode.invalidEmail,
           e.message ?? 'البريد الإلكتروني غير صحيح',
         );
+
       case 'too-many-requests':
         return AuthenticationFailure(
           AuthErrorCode.tooManyRequests,
           e.message ?? 'محاولات كثيرة، حاول لاحقاً',
         );
+
       case 'weak-password':
         return AuthenticationFailure(
           AuthErrorCode.weakPassword,
           e.message ?? 'كلمة المرور ضعيفة',
         );
+
       case 'user-disabled':
         return AuthenticationFailure(
           AuthErrorCode.userDisabled,
           e.message ?? 'الحساب معطل',
         );
+
       default:
-        return AuthFailure(e.message ?? e.code);
+        return AuthenticationFailure(
+          AuthErrorCode.unknown,
+          e.message ?? 'حدث خطأ غير متوقع',
+        );
     }
   }
 }

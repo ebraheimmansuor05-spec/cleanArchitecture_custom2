@@ -44,7 +44,7 @@ abstract final class AuthValidator {
     }
 
     if (credentials.accountType == AccountType.owner &&
-      (credentials.workshopName?.trim().isEmpty ?? true)) {
+      credentials.workshopName.trim().isEmpty) {
       errors[AuthField.workshopName] = AuthValidationCode.required;
     }
 

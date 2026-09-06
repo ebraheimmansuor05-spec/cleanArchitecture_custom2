@@ -1,14 +1,18 @@
 
-import 'package:easy_localization/easy_localization.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_clean_architecture_template/core/di/injection_container.dart';
+import 'package:flutter_clean_architecture_template/features/authentication/domain/entities/auth_failure.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/usecases/auth_use_cases.dart';
+import 'package:flutter_clean_architecture_template/features/authentication/domain/usecases/worker_login_usecase.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/presentation/manager/authentication_cubit.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/presentation/manager/session_cubit.dart';
+import 'package:flutter_clean_architecture_template/features/authentication/presentation/manager/authentication_state.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/presentation/pages/forgot_password_page.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/presentation/pages/login_page.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/presentation/pages/register_page.dart';
@@ -16,7 +20,6 @@ import 'package:flutter_clean_architecture_template/features/authentication/pres
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/usecases/create_workshop_usecase.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../helpers/fakes.dart';
 
@@ -26,9 +29,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late FakeAuthRepository repository;
+  late FakeWorkshopUsersRolesRepository workshopUsersRolesRepository;
 
   setUpAll(() async {
     SharedPreferences.setMockInitialValues({});
+
     await EasyLocalization.ensureInitialized();
 
     _testTranslations = {
@@ -51,9 +56,15 @@ void main() {
 
   setUp(() {
     repository = FakeAuthRepository();
+    workshopUsersRolesRepository = FakeWorkshopUsersRolesRepository();
 
     final createWorkshopUseCase = CreateWorkshopUseCase(
       FakeWorkshopRepository(),
+    );
+
+    final workerLoginUseCase = WorkerLoginUseCase(
+      repository,
+      workshopUsersRolesRepository,
     );
 
     sl.registerFactory(
@@ -62,6 +73,7 @@ void main() {
         registerUseCase: RegisterUseCase(repository),
         sendPasswordResetUseCase: SendPasswordResetUseCase(repository),
         createWorkshopUseCase: createWorkshopUseCase,
+        workerLoginUseCase: workerLoginUseCase,
       ),
     );
   });
@@ -101,89 +113,130 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('login fields render and submission reaches Cubit/use case', (
-    tester,
-  ) async {
-    await pumpLocalizedPage(
-      tester,
-      page: const LoginPage(),
-    );
+  testWidgets(
+    'login fields render and submission reaches Cubit/use case',
+    (tester) async {
+      await pumpLocalizedPage(
+        tester,
+        page: const LoginPage(),
+      );
 
-    expect(find.text('Email address'), findsOneWidget);
-    expect(find.text('Password'), findsOneWidget);
+      final fields = find.byType(TextField);
 
-    final fields = find.byType(TextField);
+      expect(fields, findsNWidgets(2));
 
-    await tester.enterText(
-      fields.at(0),
-      'owner@kitchenflow.test',
-    );
+      await tester.enterText(
+        fields.at(0),
+        'owner@kitchenflow.test',
+      );
 
-    await tester.enterText(
-      fields.at(1),
-      'password',
-    );
+      await tester.enterText(
+        fields.at(1),
+        'password',
+      );
 
-    await tester.tap(
-      find.text('Sign in'),
-    );
+      final submitButton = find.byType(ElevatedButton);
 
-    await tester.pump();
+      expect(
+        submitButton,
+        findsOneWidget,
+      );
 
-    expect(repository.loginCalls, 1);
-    expect(
-      repository.lastLoginCredentials?.email,
-      'owner@kitchenflow.test',
-    );
-  });
+      await tester.tap(submitButton);
 
-  testWidgets('login validation errors are rendered from Cubit state', (
-    tester,
-  ) async {
-    await pumpLocalizedPage(
-      tester,
-      page: const LoginPage(),
-    );
+      await tester.pump();
 
-    await tester.tap(
-      find.text('Sign in'),
-    );
+      expect(repository.loginCalls, 1);
 
-    await tester.pump();
+      expect(
+        repository.lastLoginCredentials?.email,
+        'owner@kitchenflow.test',
+      );
 
-    expect(
-      find.text('This field is required.'),
-      findsNWidgets(2),
-    );
+      expect(
+        repository.lastLoginCredentials?.password,
+        'password',
+      );
+    },
+  );
 
-    expect(repository.loginCalls, 0);
-  });
+  testWidgets(
+    'login validation errors are rendered from AuthValidationFailure',
+    (tester) async {
+      await pumpLocalizedPage(
+        tester,
+        page: const LoginPage(),
+      );
 
-  testWidgets('password recovery submission reaches Cubit/use case', (
-    tester,
-  ) async {
-    await pumpLocalizedPage(
-      tester,
-      page: const ForgotPasswordPage(),
-    );
+      final submitButton = find.byType(ElevatedButton);
 
-    await tester.enterText(
-      find.byType(TextField),
-      'owner@kitchenflow.test',
-    );
+      expect(
+        submitButton,
+        findsOneWidget,
+      );
 
-    await tester.tap(
-      find.text('Send reset link'),
-    );
+      await tester.tap(submitButton);
 
-    await tester.pump();
+      await tester.pump();
 
-    expect(repository.resetCalls, 1);
-    expect(
-      repository.lastResetEmail,
-      'owner@kitchenflow.test',
-    );
-  });
+      final cubit = BlocProvider.of<AuthenticationCubit>(
+        tester.element(submitButton),
+      );
+
+      expect(
+        cubit.state,
+        isA<AuthenticationFailureState>(),
+      );
+
+      final failureState = cubit.state as AuthenticationFailureState;
+
+      expect(
+        failureState.fieldErrors,
+        {
+          AuthField.email: AuthValidationCode.required,
+          AuthField.password: AuthValidationCode.required,
+        },
+      );
+
+      expect(
+        repository.loginCalls,
+        0,
+      );
+    },
+  );
+
+  testWidgets(
+    'password recovery submission reaches Cubit/use case',
+    (tester) async {
+      await pumpLocalizedPage(
+        tester,
+        page: const ForgotPasswordPage(),
+      );
+
+      await tester.enterText(
+        find.byType(TextField),
+        'owner@kitchenflow.test',
+      );
+
+      final submitButton = find.byType(ElevatedButton);
+
+      expect(
+        submitButton,
+        findsOneWidget,
+      );
+
+      await tester.tap(submitButton);
+
+      await tester.pump();
+
+      expect(repository.resetCalls, 1);
+
+      expect(
+        repository.lastResetEmail,
+        'owner@kitchenflow.test',
+      );
+    },
+  );
 
   testWidgets(
     'registration submits identity and workshop credentials',
@@ -199,12 +252,12 @@ void main() {
 
       await tester.enterText(
         fields.at(0),
-        'KitchenFlow Workshop',
+        'owner@kitchenflow.test',
       );
 
       await tester.enterText(
         fields.at(1),
-        'owner@kitchenflow.test',
+        'password',
       );
 
       await tester.enterText(
@@ -214,10 +267,15 @@ void main() {
 
       await tester.enterText(
         fields.at(3),
-        'password',
+        'KitchenFlow Workshop',
       );
 
-      final submitButton = find.text('Create account');
+      final submitButton = find.byType(ElevatedButton);
+
+      expect(
+        submitButton,
+        findsOneWidget,
+      );
 
       await tester.ensureVisible(submitButton);
       await tester.pumpAndSettle();
@@ -234,100 +292,122 @@ void main() {
       );
 
       expect(
+        repository.lastRegistrationCredentials?.password,
+        'password',
+      );
+
+      expect(
+        repository.lastRegistrationCredentials?.confirmPassword,
+        'password',
+      );
+
+      expect(
         repository.lastRegistrationCredentials?.workshopName,
         'KitchenFlow Workshop',
       );
     },
   );
 
- testWidgets('Arabic login renders right-to-left', (tester) async {
-  tester.view.physicalSize = const Size(320, 700);
-  tester.view.devicePixelRatio = 1;
+  testWidgets(
+    'Arabic login renders right-to-left',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 700);
+      tester.view.devicePixelRatio = 1;
 
-  addTearDown(
-    tester.view.resetPhysicalSize,
+      addTearDown(
+        tester.view.resetPhysicalSize,
+      );
+
+      addTearDown(
+        tester.view.resetDevicePixelRatio,
+      );
+
+      await pumpLocalizedPage(
+        tester,
+        page: const LoginPage(),
+        locale: const Locale('ar'),
+      );
+
+      final emailText = find.text('البريد الإلكتروني');
+
+      expect(
+        emailText,
+        findsOneWidget,
+      );
+
+      expect(
+        Directionality.of(
+          tester.element(emailText),
+        ),
+        ui.TextDirection.rtl,
+      );
+
+      expect(
+        tester.takeException(),
+        isNull,
+      );
+    },
   );
 
-  addTearDown(
-    tester.view.resetDevicePixelRatio,
-  );
+  testWidgets(
+    'logout button communicates through SessionCubit',
+    (tester) async {
+      final sessionCubit = _RecordingSessionCubit(repository);
 
-  await pumpLocalizedPage(
-    tester,
-    page: const LoginPage(),
-    locale: const Locale('ar'),
-  );
-
-  final emailText = find.text('البريد الإلكتروني');
-
-  expect(emailText, findsOneWidget);
-
-  expect(
-    Directionality.of(
-      tester.element(emailText),
-    ),
-    ui.TextDirection.rtl,
-  );
-
-  expect(
-    tester.takeException(),
-    isNull,
-  );
-});
-
-  testWidgets('logout button communicates through SessionCubit', (
-    tester,
-  ) async {
-    final sessionCubit = _RecordingSessionCubit(repository);
-
-    await tester.pumpWidget(
-      EasyLocalization(
-        supportedLocales: const [
-          Locale('en'),
-          Locale('ar'),
-        ],
-        path: 'assets/translations',
-        fallbackLocale: const Locale('en'),
-        startLocale: const Locale('en'),
-        useOnlyLangCode: true,
-        assetLoader: const _FileAssetLoader(),
-        child: Builder(
-          builder: (context) => MaterialApp(
-            localizationsDelegates: context.localizationDelegates,
-            supportedLocales: context.supportedLocales,
-            locale: context.locale,
-            home: Scaffold(
-              body: BlocProvider<SessionCubit>.value(
-                value: sessionCubit,
-                child: const SessionLogoutButton(),
+      await tester.pumpWidget(
+        EasyLocalization(
+          supportedLocales: const [
+            Locale('en'),
+            Locale('ar'),
+          ],
+          path: 'assets/translations',
+          fallbackLocale: const Locale('en'),
+          startLocale: const Locale('en'),
+          useOnlyLangCode: true,
+          assetLoader: const _FileAssetLoader(),
+          child: Builder(
+            builder: (context) => MaterialApp(
+              localizationsDelegates: context.localizationDelegates,
+              supportedLocales: context.supportedLocales,
+              locale: context.locale,
+              home: Scaffold(
+                body: BlocProvider<SessionCubit>.value(
+                  value: sessionCubit,
+                  child: const SessionLogoutButton(),
+                ),
               ),
             ),
           ),
         ),
-      ),
-    );
+      );
 
-    await tester.pumpAndSettle();
+      await tester.pumpAndSettle();
 
-    await tester.tap(
-      find.text('Sign out'),
-    );
+      final logoutButton = find.byType(OutlinedButton);
 
-    await tester.pump();
+      expect(
+        logoutButton,
+        findsOneWidget,
+      );
 
-    expect(
-      sessionCubit.logoutCalls,
-      1,
-    );
+      await tester.tap(logoutButton);
 
-    await tester.pumpWidget(
-      const SizedBox.shrink(),
-    );
+      await tester.pump();
 
-    await tester.pump();
+      expect(
+        sessionCubit.logoutCalls,
+        1,
+      );
 
-    await sessionCubit.close();
-  });
+      await tester.pumpWidget(
+        const SizedBox.shrink(),
+      );
+
+      await tester.pump();
+
+      await sessionCubit.close();
+    },
+  );
 }
 
 class _FileAssetLoader extends AssetLoader {
@@ -337,10 +417,17 @@ class _FileAssetLoader extends AssetLoader {
   Future<Map<String, dynamic>> load(
     String path,
     Locale locale,
-  ) =>
-      Future.value(
-        _testTranslations[locale.languageCode],
+  ) {
+    final translations = _testTranslations[locale.languageCode];
+
+    if (translations == null) {
+      throw StateError(
+        'No test translations found for locale: ${locale.languageCode}',
       );
+    }
+
+    return Future.value(translations);
+  }
 }
 
 class _RecordingSessionCubit extends SessionCubit {

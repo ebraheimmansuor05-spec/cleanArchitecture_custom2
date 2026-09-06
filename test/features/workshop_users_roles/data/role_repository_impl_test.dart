@@ -1,5 +1,3 @@
-
-import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -23,24 +21,59 @@ void main() {
 
   group('getRoles', () {
     test(
-      'returns roles when remote data source succeeds',
+      'returns roles mapped from remote data source models',
       () async {
         const workshopId = 'workshop-1';
 
-        final roles = <RoleModel>[];
+        final roles = <RoleModel>[
+          RoleModel(
+            id: 'role-1',
+            workshopId: workshopId,
+            name: 'Manager',
+            description: 'Workshop manager',
+            permissions: const [],
+            isSystemRole: false,
+            createdAt: DateTime(2026, 1, 1),
+            updatedAt: DateTime(2026, 1, 1),
+          ),
+        ];
 
         when(
-          () => remoteDataSource.fetchRoles(workshopId),
+          () => remoteDataSource.getRoles(workshopId),
         ).thenAnswer(
           (_) async => roles,
         );
 
         final result = await repository.getRoles(workshopId);
 
-        expect(result, Right<Failure, List<RoleEntity>>(roles));
+        expect(result.isRight(), isTrue);
+
+        final mappedRoles = result.fold(
+          (_) => <RoleEntity>[],
+          (value) => value,
+        );
+
+        expect(mappedRoles, hasLength(1));
+        expect(mappedRoles.first.id, 'role-1');
+        expect(mappedRoles.first.workshopId, workshopId);
+        expect(mappedRoles.first.name, 'Manager');
+        expect(
+          mappedRoles.first.description,
+          'Workshop manager',
+        );
+        expect(mappedRoles.first.permissions, isEmpty);
+        expect(mappedRoles.first.isSystemRole, isFalse);
+        expect(
+          mappedRoles.first.createdAt,
+          DateTime(2026, 1, 1),
+        );
+        expect(
+          mappedRoles.first.updatedAt,
+          DateTime(2026, 1, 1),
+        );
 
         verify(
-          () => remoteDataSource.fetchRoles(workshopId),
+          () => remoteDataSource.getRoles(workshopId),
         ).called(1);
       },
     );
@@ -51,17 +84,24 @@ void main() {
         const workshopId = 'workshop-1';
 
         when(
-          () => remoteDataSource.fetchRoles(workshopId),
+          () => remoteDataSource.getRoles(workshopId),
         ).thenThrow(
           Exception('Failed to fetch roles'),
         );
 
         final result = await repository.getRoles(workshopId);
 
-        expect(result.isLeft(), true);
+        expect(result.isLeft(), isTrue);
+
+        final failure = result.fold(
+          (failure) => failure,
+          (_) => null,
+        );
+
+        expect(failure, isA<AuthFailure>());
 
         verify(
-          () => remoteDataSource.fetchRoles(workshopId),
+          () => remoteDataSource.getRoles(workshopId),
         ).called(1);
       },
     );

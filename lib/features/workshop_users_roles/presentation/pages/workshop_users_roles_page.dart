@@ -1,8 +1,12 @@
 
+// lib/features/workshop_users_roles/presentation/pages/workshop_users_roles_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/di/injection_container.dart';
+import '../../../authentication/presentation/manager/session_cubit.dart';
+import '../../../authentication/presentation/manager/session_state.dart';
 import '../../domain/entities/role_entity.dart';
 import '../manager/role/role_cubit.dart';
 import '../manager/role/role_state.dart';
@@ -11,20 +15,57 @@ import '../manager/workshop_user/workshop_state.dart';
 import '../manager/workshop_user/workshop_user_cubit.dart';
 import '../manager/workshop_user/workshop_user_state.dart';
 import '../widgets/workshop_users_roles_widgets.dart';
+import 'add_worker_page.dart';
 
-class WorkshopUsersRolesPage extends StatefulWidget {
+class WorkshopUsersRolesPage extends StatelessWidget {
   const WorkshopUsersRolesPage({super.key});
 
   @override
-  State<WorkshopUsersRolesPage> createState() =>
-      _WorkshopUsersRolesPageState();
+  Widget build(BuildContext context) {
+    return BlocBuilder<SessionCubit, SessionState>(
+      builder: (context, sessionState) {
+        if (sessionState is! SessionAuthenticated) {
+          return const Scaffold(
+            body: Center(
+              child: Text('يرجى تسجيل الدخول'),
+            ),
+          );
+        }
+
+        final user = sessionState.user;
+        final workshopId = user.workshopId;
+
+        if (workshopId == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text('لا توجد ورشة مرتبطة بهذا المستخدم'),
+            ),
+          );
+        }
+
+        return _WorkspaceView(
+          workshopId: workshopId,
+        );
+      },
+    );
+  }
 }
 
-class _WorkshopUsersRolesPageState extends State<WorkshopUsersRolesPage>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
+class _WorkspaceView extends StatefulWidget {
+  final String workshopId;
 
+  const _WorkspaceView({
+    required this.workshopId,
+  });
+
+  @override
+  State<_WorkspaceView> createState() => _WorkspaceViewState();
+}
+
+class _WorkspaceViewState extends State<_WorkspaceView>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _searchController = TextEditingController();
   String _searchQuery = '';
 
   @override
@@ -58,155 +99,125 @@ class _WorkshopUsersRolesPageState extends State<WorkshopUsersRolesPage>
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<WorkshopCubit, WorkshopState>(
-      builder: (context, workshopState) {
-        if (workshopState is WorkshopInitial ||
-            workshopState is WorkshopLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (workshopState is WorkshopError) {
-          return _WorkshopErrorState(
-            message: workshopState.message,
-          );
-        }
-
-        if (workshopState is! WorkshopLoaded) {
-          return const Scaffold(
-            body: Center(
-              child: Text(
-                'Workshop is unavailable.',
-              ),
-            ),
-          );
-        }
-
-        final workshopId = workshopState.workshop.id;
-
-        return _buildWorkspacePage(
-          workshopId,
-        );
-      },
-    );
-  }
-
-  Widget _buildWorkspacePage(String workshopId) {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (_) => sl<WorkshopUserCubit>()
-            ..loadData(workshopId),
+          create: (_) =>
+              sl<WorkshopCubit>()..loadWorkshop(widget.workshopId),
         ),
         BlocProvider(
-          create: (_) => sl<RoleCubit>()
-            ..loadRoles(workshopId),
+          create: (_) =>
+              sl<WorkshopUserCubit>()..loadData(widget.workshopId),
+        ),
+        BlocProvider(
+          create: (_) =>
+              sl<RoleCubit>()..loadRoles(widget.workshopId),
         ),
       ],
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8F8FA),
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          leading: IconButton(
-            onPressed: () {
-              if (Scaffold.of(context).hasDrawer) {
-                Scaffold.of(context).openDrawer();
-              }
-            },
-            icon: const Icon(
-              Icons.menu_rounded,
-              color: Color(0xFF25252D),
-            ),
+      child: _buildWorkspacePage(),
+    );
+  }
+
+  Widget _buildWorkspacePage() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F8FA),
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        leading: IconButton(
+          onPressed: () {
+            if (Scaffold.of(context).hasDrawer) {
+              Scaffold.of(context).openDrawer();
+            }
+          },
+          icon: const Icon(
+            Icons.menu_rounded,
+            color: Color(0xFF25252D),
           ),
-          title: const Text(
-            'TEAM & ACCESS',
-            style: TextStyle(
-              color: Color(0xFF25252D),
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-            ),
+        ),
+        title: const Text(
+          'TEAM & ACCESS',
+          style: TextStyle(
+            color: Color(0xFF25252D),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
           ),
-          centerTitle: true,
-          actions: [
-            Stack(
-              children: [
-                IconButton(
-                  onPressed: () {},
-                  icon: const Icon(
-                    Icons.notifications_none_rounded,
-                    color: Color(0xFF25252D),
+        ),
+        centerTitle: true,
+        actions: [
+          Stack(
+            children: [
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: Color(0xFF25252D),
+                ),
+              ),
+              Positioned(
+                top: 11,
+                right: 12,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE53935),
+                    shape: BoxShape.circle,
                   ),
                 ),
-                Positioned(
-                  top: 11,
-                  right: 12,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFE53935),
-                      shape: BoxShape.circle,
-                    ),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          const Divider(
+            height: 1,
+            color: Color(0xFFE7E7EB),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                _SearchSection(
+                  controller: _searchController,
+                  onFilterPressed: () {
+                    _showFilterBottomSheet(context);
+                  },
+                ),
+                _TeamTabs(
+                  controller: _tabController,
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _StaffDirectory(
+                        searchQuery: _searchQuery,
+                      ),
+                      _RoleAccess(
+                        searchQuery: _searchQuery,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        body: Column(
-          children: [
-            const Divider(
-              height: 1,
-              color: Color(0xFFE7E7EB),
-            ),
-            Expanded(
-              child: Column(
-                children: [
-                  _SearchSection(
-                    controller: _searchController,
-                    onFilterPressed: () {
-                      _showFilterBottomSheet(context);
-                    },
-                  ),
-                  _TeamTabs(
-                    controller: _tabController,
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _StaffDirectory(
-                          workshopId: workshopId,
-                          searchQuery: _searchQuery,
-                        ),
-                        _RoleAccess(
-                          searchQuery: _searchQuery,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            _showAddMemberBottomSheet(context);
-          },
-          backgroundColor: const Color(0xFF6046A5),
-          elevation: 4,
-          child: const Icon(
-            Icons.add_rounded,
-            color: Colors.white,
-            size: 32,
           ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          _showAddMemberBottomSheet(context);
+        },
+        backgroundColor: const Color(0xFF6046A5),
+        elevation: 4,
+        child: const Icon(
+          Icons.add_rounded,
+          color: Colors.white,
+          size: 32,
         ),
       ),
     );
@@ -230,62 +241,31 @@ class _WorkshopUsersRolesPageState extends State<WorkshopUsersRolesPage>
   }
 
   void _showAddMemberBottomSheet(BuildContext context) {
+    final workshopState = context.read<WorkshopCubit>().state;
+
+    if (workshopState is! WorkshopLoaded) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لم يتم تحميل الورشة'),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
       builder: (context) {
-        return const SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text(
-              'Add workshop member flow will be implemented here.',
-            ),
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: AddWorkerPage(
+            workshopId: workshopState.workshop.id,
           ),
         );
       },
-    );
-  }
-}
-
-class _WorkshopErrorState extends StatelessWidget {
-  final String message;
-
-  const _WorkshopErrorState({
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.storefront_outlined,
-                size: 56,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Unable to load workshop.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -423,11 +403,9 @@ class _TeamTabs extends StatelessWidget {
 
 class _StaffDirectory extends StatelessWidget {
   final String searchQuery;
-  final String workshopId;
 
   const _StaffDirectory({
     required this.searchQuery,
-    required this.workshopId,
   });
 
   @override
@@ -444,9 +422,16 @@ class _StaffDirectory extends StatelessWidget {
           return _ErrorState(
             message: state.message,
             onRetry: () {
-              context
-                  .read<WorkshopUserCubit>()
-                  .loadData(workshopId);
+              final workshopState =
+                  context.read<WorkshopCubit>().state;
+
+              if (workshopState is WorkshopLoaded) {
+                context
+                    .read<WorkshopUserCubit>()
+                    .loadData(
+                      workshopState.workshop.id,
+                    );
+              }
             },
           );
         }
@@ -757,3 +742,4 @@ class _NoRolesFound extends StatelessWidget {
     );
   }
 }
+

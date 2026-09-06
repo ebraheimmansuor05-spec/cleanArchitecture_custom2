@@ -2,15 +2,15 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../domain/entities/auth_user_entity.dart';
+import '../models/auth_user_model.dart';
 
 abstract class AuthRemoteDataSource {
-  Future<AuthUserEntity> login({
+  Future<AuthUserModel> login({
     required String email,
     required String password,
   });
 
-  Future<AuthUserEntity> register({
+  Future<AuthUserModel> register({
     required String email,
     required String password,
     required String displayName,
@@ -18,17 +18,18 @@ abstract class AuthRemoteDataSource {
 
   Future<void> sendPasswordResetEmail(String email);
   Future<void> logout();
-  Future<AuthUserEntity?> getCurrentUser();
-  Stream<AuthUserEntity?> observeAuthState();
+  Future<AuthUserModel?> getCurrentUser();
+  Stream<AuthUserModel?> observeAuthState();
 
-  // ✅ جديد: إنشاء مستخدم للعامل
-  Future<AuthUserEntity> createUserWithEmail({
+  // إنشاء مستخدم للعامل.
+  // سيبقى موجودًا حاليًا حتى نعيد بناء Worker Creation
+  // بشكل آمن في طبقة الـbackend.
+  Future<AuthUserModel> createUserWithEmail({
     required String email,
     required String password,
     required String displayName,
   });
 
-  // ✅ جديد: حذف مستخدم
   Future<void> deleteUser(String userId);
 }
 
@@ -38,7 +39,7 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
   const FirebaseAuthRemoteDataSource(this._firebaseAuth);
 
   @override
-  Future<AuthUserEntity> login({
+  Future<AuthUserModel> login({
     required String email,
     required String password,
   }) async {
@@ -46,11 +47,20 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
       email: email,
       password: password,
     );
-    return _toEntity(credential.user!);
+
+    final user = credential.user;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'لم يتم العثور على المستخدم بعد تسجيل الدخول.',
+      );
+    }
+
+    return AuthUserModel.fromFirebaseUser(user);
   }
 
   @override
-  Future<AuthUserEntity> register({
+  Future<AuthUserModel> register({
     required String email,
     required String password,
     required String displayName,
@@ -59,9 +69,27 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
       email: email,
       password: password,
     );
-    await credential.user?.updateDisplayName(displayName);
-    await credential.user?.reload();
-    return _toEntity(_firebaseAuth.currentUser!);
+
+    final user = credential.user;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'تعذر إنشاء حساب المستخدم.',
+      );
+    }
+
+    await user.updateDisplayName(displayName);
+    await user.reload();
+
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'تعذر استرجاع المستخدم بعد إنشاء الحساب.',
+      );
+    }
+
+    return AuthUserModel.fromFirebaseUser(currentUser);
   }
 
   @override
@@ -75,20 +103,21 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
   }
 
   @override
-  Future<AuthUserEntity?> getCurrentUser() async {
+  Future<AuthUserModel?> getCurrentUser() async {
     final user = _firebaseAuth.currentUser;
-    return user != null ? _toEntity(user) : null;
+
+    return user != null ? AuthUserModel.fromFirebaseUser(user) : null;
   }
 
   @override
-  Stream<AuthUserEntity?> observeAuthState() {
-    return _firebaseAuth.authStateChanges().map((user) {
-      return user != null ? _toEntity(user) : null;
-    });
+  Stream<AuthUserModel?> observeAuthState() {
+    return _firebaseAuth.authStateChanges().map(
+      (user) => user != null ? AuthUserModel.fromFirebaseUser(user) : null,
+    );
   }
 
   @override
-  Future<AuthUserEntity> createUserWithEmail({
+  Future<AuthUserModel> createUserWithEmail({
     required String email,
     required String password,
     required String displayName,
@@ -97,25 +126,35 @@ class FirebaseAuthRemoteDataSource implements AuthRemoteDataSource {
       email: email,
       password: password,
     );
-    await credential.user?.updateDisplayName(displayName);
-    await credential.user?.reload();
-    return _toEntity(_firebaseAuth.currentUser!);
+
+    final user = credential.user;
+    if (user == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'تعذر إنشاء حساب العامل.',
+      );
+    }
+
+    await user.updateDisplayName(displayName);
+    await user.reload();
+
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      throw FirebaseAuthException(
+        code: 'user-not-found',
+        message: 'تعذر استرجاع المستخدم بعد إنشاء الحساب.',
+      );
+    }
+
+    return AuthUserModel.fromFirebaseUser(currentUser);
   }
 
   @override
   Future<void> deleteUser(String userId) async {
     final user = _firebaseAuth.currentUser;
+
     if (user != null && user.uid == userId) {
       await user.delete();
     }
-  }
-
-  AuthUserEntity _toEntity(User user) {
-    return AuthUserEntity(
-      id: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      isEmailVerified: user.emailVerified,
-    );
   }
 }

@@ -3,7 +3,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../core/di/injection_container.dart';
-import '../authentication/domain/repositories/auth_repository.dart';
 import 'data/datasources/workshop_users_roles_remote_data_source.dart';
 import 'data/repositories/role_repository_impl.dart';
 import 'data/repositories/workshop_repository_impl.dart';
@@ -79,11 +78,10 @@ void initWorkshopUsersRoles() {
     ),
   );
 
-  // ✅ CreateWorkerUseCase
   sl.registerLazySingleton<CreateWorkerUseCase>(
     () => CreateWorkerUseCase(
-      sl<AuthRepository>(),
       sl<WorkshopUsersRolesRepository>(),
+      sl<WorkshopRepository>(),
     ),
   );
 

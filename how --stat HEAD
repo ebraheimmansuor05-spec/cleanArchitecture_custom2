@@ -1,0 +1,9 @@
+[33ma192ecb[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mintegration/current-work[m[33m)[m backup before authentication recovery
+[33m9cefbf5[m feat(workshop): implement users and roles
+[33m4c405d9[m Merge branch 'saeed-authentication-gateway' into integration/current-work
+[33mf58afb4[m[33m ([m[1;32msaeed-authentication-gateway[m[33m)[m authentication
+[33mb76e957[m[33m ([m[1;31morigin/foundation/firebase-bootstrap[m[33m, [m[1;32mfoundation/firebase-bootstrap[m[33m)[m feat: scaffold workshop users roles feature
+[33m7d3a483[m chore: bootstrap firebase
+[33m0338d02[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mtemplate-original[m[33m, [m[1;32mmain[m[33m)[m first commit
+[33m6292d56[m first commit
+[33m14a3eb9[m Clean final version

@@ -40,6 +40,7 @@ class _RegisterViewState extends State<_RegisterView> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _workshopNameController = TextEditingController();
+
   AccountType _accountType = AccountType.owner;
 
   @override
@@ -53,6 +54,7 @@ class _RegisterViewState extends State<_RegisterView> {
 
   void _submit() {
     TextInput.finishAutofillContext();
+
     context.read<AuthenticationCubit>().register(
       email: _emailController.text,
       password: _passwordController.text,
@@ -69,10 +71,15 @@ class _RegisterViewState extends State<_RegisterView> {
       subtitleKey: 'authentication.register_subtitle',
       child: BlocBuilder<AuthenticationCubit, AuthenticationState>(
         builder: (context, state) {
-          final failure = state is AuthenticationFailureState ? state : null;
+          final failure = state is AuthenticationFailureState
+              ? state
+              : null;
+
           final emailError = failure?.fieldErrors[AuthField.email];
           final passwordError = failure?.fieldErrors[AuthField.password];
-          final workshopNameError = failure?.fieldErrors[AuthField.workshopName];
+          final workshopNameError =
+              failure?.fieldErrors[AuthField.workshopName];
+
           final isLoading = state is AuthenticationLoading;
 
           return AutofillGroup(
@@ -90,8 +97,12 @@ class _RegisterViewState extends State<_RegisterView> {
                       hintText: 'authentication.email_hint'.tr(),
                       errorText: emailError == null
                           ? null
-                          : authValidationLocalizationKey(emailError).tr(),
-                      prefixIcon: const Icon(Icons.person_outline_rounded),
+                          : authValidationLocalizationKey(
+                              emailError,
+                            ).tr(),
+                      prefixIcon: const Icon(
+                        Icons.person_outline_rounded,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -100,7 +111,9 @@ class _RegisterViewState extends State<_RegisterView> {
                     labelKey: 'authentication.password',
                     errorText: passwordError == null
                         ? null
-                        : authValidationLocalizationKey(passwordError).tr(),
+                        : authValidationLocalizationKey(
+                            passwordError,
+                          ).tr(),
                   ),
                   const SizedBox(height: 16),
                   AuthPasswordField(
@@ -112,52 +125,65 @@ class _RegisterViewState extends State<_RegisterView> {
                   TextField(
                     controller: _workshopNameController,
                     textInputAction: TextInputAction.done,
-                    autofillHints: const [AutofillHints.organizationName],
+                    autofillHints: const [
+                      AutofillHints.organizationName,
+                    ],
                     decoration: InputDecoration(
                       labelText: 'authentication.workshop_name'.tr(),
                       hintText: 'authentication.workshop_name_hint'.tr(),
                       errorText: workshopNameError == null
                           ? null
-                          : authValidationLocalizationKey(workshopNameError).tr(),
-                      prefixIcon: const Icon(Icons.storefront_outlined),
+                          : authValidationLocalizationKey(
+                              workshopNameError,
+                            ).tr(),
+                      prefixIcon: const Icon(
+                        Icons.storefront_outlined,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // ✅ إصلاح Radio buttons - استخدام value بدلاً من groupValue
-                  Row(
-                    children: [
-                      Expanded(
-                        child: RadioListTile<AccountType>(
-                          title: Text('authentication.owner'.tr()),
-                          value: AccountType.owner,
-                          groupValue: _accountType,
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _accountType = value);
-                            }
-                          },
+
+                  RadioGroup<AccountType>(
+                    groupValue: _accountType,
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _accountType = value;
+                        });
+                      }
+                    },
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<AccountType>(
+                            title: Text(
+                              'authentication.owner'.tr(),
+                            ),
+                            value: AccountType.owner,
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: RadioListTile<AccountType>(
-                          title: Text('authentication.worker'.tr()),
-                          value: AccountType.worker,
-                          groupValue: _accountType,
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() => _accountType = value);
-                            }
-                          },
+                        Expanded(
+                          child: RadioListTile<AccountType>(
+                            title: Text(
+                              'authentication.worker'.tr(),
+                            ),
+                            value: AccountType.worker,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  if (failure != null && failure.fieldErrors.isEmpty) ...[
+
+                  if (failure != null &&
+                      failure.fieldErrors.isEmpty) ...[
                     const SizedBox(height: 8),
                     _InlineError(
-                      message: authErrorLocalizationKey(failure.errorCode).tr(),
+                      message: authErrorLocalizationKey(
+                        failure.errorCode,
+                      ).tr(),
                     ),
                   ],
+
                   const SizedBox(height: 12),
                   SizedBox(
                     height: 52,
@@ -171,7 +197,9 @@ class _RegisterViewState extends State<_RegisterView> {
                                 strokeWidth: 2.4,
                               ),
                             )
-                          : Text('authentication.create_account'.tr()),
+                          : Text(
+                              'authentication.create_account'.tr(),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -179,12 +207,18 @@ class _RegisterViewState extends State<_RegisterView> {
                     alignment: WrapAlignment.center,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Text('authentication.have_account'.tr()),
+                      Text(
+                        'authentication.have_account'.tr(),
+                      ),
                       TextButton(
                         onPressed: isLoading
                             ? null
-                            : () => context.push(RouteNames.kLoginPage),
-                        child: Text('authentication.sign_in'.tr()),
+                            : () => context.push(
+                                RouteNames.kLoginPage,
+                              ),
+                        child: Text(
+                          'authentication.sign_in'.tr(),
+                        ),
                       ),
                     ],
                   ),
@@ -201,7 +235,9 @@ class _RegisterViewState extends State<_RegisterView> {
 class _InlineError extends StatelessWidget {
   final String message;
 
-  const _InlineError({required this.message});
+  const _InlineError({
+    required this.message,
+  });
 
   @override
   Widget build(BuildContext context) {

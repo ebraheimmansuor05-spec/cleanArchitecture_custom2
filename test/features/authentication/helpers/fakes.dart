@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
+
 import 'package:flutter_clean_architecture_template/core/errors/failures.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/data/datasources/auth_remote_data_source.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/data/models/auth_user_model.dart';
@@ -8,7 +9,10 @@ import 'package:flutter_clean_architecture_template/features/authentication/doma
 import 'package:flutter_clean_architecture_template/features/authentication/domain/params/auth_credentials.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/repositories/auth_repository.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/entities/workshop_entity.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/entities/workshop_user_entity.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/repositories/workshop_repository.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/repositories/workshop_users_roles_repository.dart';
+
 const testUser = AuthUserEntity(
   id: 'user-1',
   email: 'owner@kitchenflow.test',
@@ -22,6 +26,7 @@ const testUserModel = AuthUserModel(
   displayName: null,
   isEmailVerified: true,
 );
+
 class FakeWorkshopRepository implements WorkshopRepository {
   Either<Failure, WorkshopEntity> createWorkshopResult = Right(
     WorkshopEntity(
@@ -89,12 +94,62 @@ class FakeWorkshopRepository implements WorkshopRepository {
   }
 }
 
+class FakeWorkshopUsersRolesRepository
+    implements WorkshopUsersRolesRepository {
+  Either<Failure, List<WorkshopUserEntity>> getWorkshopUsersResult =
+      const Right([]);
+
+  Either<Failure, WorkshopUserEntity?> getWorkshopUserByUserIdResult =
+      const Right(null);
+
+  late Either<Failure, WorkshopUserEntity> createWorkshopUserResult;
+
+  int getWorkshopUsersCalls = 0;
+  int createWorkshopUserCalls = 0;
+  int getWorkshopUserByUserIdCalls = 0;
+
+  String? lastWorkshopId;
+  String? lastUserId;
+  WorkshopUserEntity? lastCreatedWorkshopUser;
+  String? lastWorkerId;
+
+  @override
+  Future<Either<Failure, List<WorkshopUserEntity>>> getWorkshopUsers(
+    String workshopId,
+  ) async {
+    getWorkshopUsersCalls++;
+    lastWorkshopId = workshopId;
+    return getWorkshopUsersResult;
+  }
+
+  @override
+  Future<Either<Failure, WorkshopUserEntity>> createWorkshopUser(
+    WorkshopUserEntity entity, {
+    required String workerId,
+  }) async {
+    createWorkshopUserCalls++;
+    lastCreatedWorkshopUser = entity;
+    lastWorkerId = workerId;
+    return createWorkshopUserResult;
+  }
+
+  @override
+  Future<Either<Failure, WorkshopUserEntity?>> getWorkshopUserByUserId(
+    String userId,
+  ) async {
+    getWorkshopUserByUserIdCalls++;
+    lastUserId = userId;
+    return getWorkshopUserByUserIdResult;
+  }
+}
+
 class FakeAuthRepository implements AuthRepository {
   Either<Failure, AuthUserEntity> loginResult = const Right(testUser);
   Either<Failure, AuthUserEntity> registerResult = const Right(testUser);
   Either<Failure, Unit> resetResult = const Right(unit);
   Either<Failure, Unit> logoutResult = const Right(unit);
   Either<Failure, AuthUserEntity?> currentUserResult = const Right(null);
+
   final authStateController =
       StreamController<Either<Failure, AuthUserEntity?>>.broadcast();
 
@@ -127,7 +182,9 @@ class FakeAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, Unit>> sendPasswordResetEmail(String email) async {
+  Future<Either<Failure, Unit>> sendPasswordResetEmail(
+    String email,
+  ) async {
     resetCalls++;
     lastResetEmail = email;
     return resetResult;
@@ -150,6 +207,20 @@ class FakeAuthRepository implements AuthRepository {
     return authStateController.stream;
   }
 
+  @override
+  Future<Either<Failure, AuthUserEntity>> registerWorker({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    return const Right(testUser);
+  }
+
+  @override
+  Future<Either<Failure, Unit>> deleteUser(String userId) async {
+    return const Right(unit);
+  }
+
   Future<void> close() => authStateController.close();
 }
 
@@ -163,14 +234,19 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   AuthUserModel loginUser = testUserModel;
   AuthUserModel registerUser = testUserModel;
   AuthUserModel? currentUser;
-  final authStateController = StreamController<AuthUserModel?>.broadcast();
+
+  final authStateController =
+      StreamController<AuthUserModel?>.broadcast();
 
   @override
   Future<AuthUserModel> login({
     required String email,
     required String password,
   }) async {
-    if (loginError case final error?) throw error;
+    if (loginError case final error?) {
+      throw error;
+    }
+
     return loginUser;
   }
 
@@ -178,29 +254,54 @@ class FakeAuthRemoteDataSource implements AuthRemoteDataSource {
   Future<AuthUserModel> register({
     required String email,
     required String password,
+    required String displayName,
   }) async {
-    if (registerError case final error?) throw error;
+    if (registerError case final error?) {
+      throw error;
+    }
+
     return registerUser;
   }
 
   @override
   Future<void> sendPasswordResetEmail(String email) async {
-    if (resetError case final error?) throw error;
+    if (resetError case final error?) {
+      throw error;
+    }
   }
 
   @override
   Future<void> logout() async {
-    if (logoutError case final error?) throw error;
+    if (logoutError case final error?) {
+      throw error;
+    }
   }
 
   @override
-  AuthUserModel? getCurrentUser() {
-    if (currentUserError case final error?) throw error;
+  Future<AuthUserModel?> getCurrentUser() async {
+    if (currentUserError case final error?) {
+      throw error;
+    }
+
     return currentUser;
   }
 
   @override
-  Stream<AuthUserModel?> observeAuthState() => authStateController.stream;
+  Stream<AuthUserModel?> observeAuthState() {
+    return authStateController.stream;
+  }
+
+  @override
+  Future<AuthUserModel> createUserWithEmail({
+    required String email,
+    required String password,
+    required String displayName,
+  }) async {
+    return registerUser;
+  }
+
+  @override
+  Future<void> deleteUser(String userId) async {}
 
   Future<void> close() => authStateController.close();
 }

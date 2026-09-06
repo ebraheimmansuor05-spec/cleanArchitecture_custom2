@@ -1,9 +1,15 @@
+
+// test/features/workshop_users_roles/data/repositories/workshop_users_roles_repository_impl_test.dart
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
+import 'package:flutter_clean_architecture_template/core/errors/failures.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/data/datasources/workshop_users_roles_remote_data_source.dart';
-import 'package:flutter_clean_architecture_template/features/workshop_users_roles/data/repositories/workshop_users_roles_repository_impl.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/data/models/workshop_user_model.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/data/repositories/workshop_users_roles_repository_impl.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/entities/workshop_user_entity.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/enums/workshop_member_status.dart';
 
 class MockWorkshopUsersRolesRemoteDataSource extends Mock
     implements WorkshopUsersRolesRemoteDataSource {}
@@ -19,51 +25,85 @@ void main() {
     );
   });
 
-  group('fetchWorkshopUsers', () {
-    test('returns users from remote data source', () async {
-      const workshopId = 'workshop-1';
+  group('getWorkshopUsers', () {
+    test(
+      'returns workshop users mapped from remote models',
+      () async {
+        const workshopId = 'workshop-1';
 
-      final users = <WorkshopUserModel>[];
+        final models = <WorkshopUserModel>[
+          WorkshopUserModel(
+            id: 'member-1',
+            workshopId: workshopId,
+            userId: 'user-1',
+            roleId: 'role-1',
+            status: WorkshopMemberStatus.active,
+            joinedAt: DateTime(2026, 1, 1),
+          ),
+        ];
 
-      when(
-        () => remoteDataSource.fetchWorkshopUsers(workshopId),
-      ).thenAnswer(
-        (_) async => users,
-      );
+        when(
+          () => remoteDataSource.getWorkshopUsers(workshopId),
+        ).thenAnswer(
+          (_) async => models,
+        );
 
-      final result = await repository.fetchWorkshopUsers(
-        workshopId,
-      );
+        final result = await repository.getWorkshopUsers(
+          workshopId,
+        );
 
-      expect(result, users);
+        expect(result.isRight(), isTrue);
 
-      verify(
-        () => remoteDataSource.fetchWorkshopUsers(workshopId),
-      ).called(1);
-    });
-  });
+        final users = result.fold(
+          (_) => <WorkshopUserEntity>[],
+          (value) => value,
+        );
 
-  group('fetchRoles', () {
-    test('returns roles from remote data source', () async {
-      const workshopId = 'workshop-1';
+        expect(users, hasLength(1));
+        expect(users.first.id, 'member-1');
+        expect(users.first.workshopId, workshopId);
+        expect(users.first.userId, 'user-1');
+        expect(users.first.roleId, 'role-1');
+        expect(
+          users.first.status,
+          WorkshopMemberStatus.active,
+        );
 
-      final roles = <dynamic>[];
+        verify(
+          () => remoteDataSource.getWorkshopUsers(workshopId),
+        ).called(1);
+      },
+    );
 
-      when(
-        () => remoteDataSource.fetchRoles(workshopId),
-      ).thenAnswer(
-        (_) async => roles.cast(),
-      );
+    test(
+      'returns failure when remote data source throws',
+      () async {
+        const workshopId = 'workshop-1';
 
-      final result = await repository.fetchRoles(
-        workshopId,
-      );
+        when(
+          () => remoteDataSource.getWorkshopUsers(workshopId),
+        ).thenThrow(
+          Exception('Firestore error'),
+        );
 
-      expect(result, roles);
+        final result = await repository.getWorkshopUsers(
+          workshopId,
+        );
 
-      verify(
-        () => remoteDataSource.fetchRoles(workshopId),
-      ).called(1);
-    });
+        expect(result.isLeft(), isTrue);
+
+        final failure = result.fold(
+          (value) => value,
+          (_) => null,
+        );
+
+        expect(failure, isA<AuthFailure>());
+
+        verify(
+          () => remoteDataSource.getWorkshopUsers(workshopId),
+        ).called(1);
+      },
+    );
   });
 }
+
