@@ -6,6 +6,7 @@ import 'package:internet_connection_checker_plus/internet_connection_checker_plu
 
 import '../../features/authentication/authentication_injection.dart';
 import '../../features/cart/cart_injection.dart';
+import '../../features/dashboard/dashboard_injection.dart';
 import '../../features/home/domain/entities/product/product_entity.dart';
 import '../../features/home/home_injection.dart';
 import '../../features/profile/profile_injection.dart';
@@ -57,6 +58,7 @@ sl.registerLazySingleton<FirebaseFirestore>(
 
   // Features
   initAuthentication();
+  initDashboard();
   initHome();
   initCart();
   initProfile();
