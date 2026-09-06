@@ -10,6 +10,7 @@ import '../../features/authentication/presentation/pages/forgot_password_page.da
 import '../../features/authentication/presentation/pages/login_page.dart';
 import '../../features/authentication/presentation/pages/register_page.dart';
 import '../../features/authentication/presentation/pages/session_check_page.dart';
+import '../../features/authentication/presentation/pages/worker_login_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/home/presentation/pages/home_page.dart';
 import '../../features/profile/presentation/pages/profile_page.dart';
@@ -24,7 +25,9 @@ class AppRouterController {
   late final GoRouter router;
 
   AppRouterController(this.sessionCubit) {
-    _refreshNotifier = _SessionRefreshNotifier(sessionCubit.stream);
+    _refreshNotifier = _SessionRefreshNotifier(
+      sessionCubit.stream,
+    );
 
     router = GoRouter(
       navigatorKey: GlobalKey<NavigatorState>(),
@@ -46,6 +49,11 @@ class AppRouterController {
           builder: (context, state) => const LoginPage(),
         ),
         GoRoute(
+          path: RouteNames.kWorkerLoginPage,
+          name: 'worker-login',
+          builder: (context, state) => const WorkerLoginPage(),
+        ),
+        GoRoute(
           path: RouteNames.kRegisterPage,
           name: 'register',
           builder: (context, state) => const RegisterPage(),
@@ -60,7 +68,6 @@ class AppRouterController {
           name: 'account-session',
           builder: (context, state) => const AccountSessionPage(),
         ),
-
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) {
             return RootPage(
@@ -86,7 +93,6 @@ class AppRouterController {
                 ),
               ],
             ),
-
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -96,7 +102,6 @@ class AppRouterController {
                 ),
               ],
             ),
-
             StatefulShellBranch(
               routes: [
                 GoRoute(
@@ -123,17 +128,22 @@ String? authenticationRedirect({
   required String location,
 }) {
   final isChecking =
-      sessionState is SessionInitial || sessionState is SessionChecking;
+      sessionState is SessionInitial ||
+      sessionState is SessionChecking;
 
-  final isSessionCheck = location == RouteNames.kSessionCheckPage;
+  final isSessionCheck =
+      location == RouteNames.kSessionCheckPage;
 
   final isPublic =
       location == RouteNames.kLoginPage ||
+      location == RouteNames.kWorkerLoginPage ||
       location == RouteNames.kRegisterPage ||
       location == RouteNames.kForgotPasswordPage;
 
   if (isChecking) {
-    return isSessionCheck ? null : RouteNames.kSessionCheckPage;
+    return isSessionCheck
+        ? null
+        : RouteNames.kSessionCheckPage;
   }
 
   if (sessionState.isAuthenticated) {
@@ -144,13 +154,17 @@ String? authenticationRedirect({
     return null;
   }
 
-  return isPublic ? null : RouteNames.kLoginPage;
+  return isPublic
+      ? null
+      : RouteNames.kLoginPage;
 }
 
 class _SessionRefreshNotifier extends ChangeNotifier {
   late final StreamSubscription<SessionState> _subscription;
 
-  _SessionRefreshNotifier(Stream<SessionState> stream) {
+  _SessionRefreshNotifier(
+    Stream<SessionState> stream,
+  ) {
     _subscription = stream.listen(
       (_) => notifyListeners(),
     );

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get_it/get_it.dart';
@@ -10,52 +12,78 @@ import '../../features/home/domain/entities/product/product_entity.dart';
 import '../../features/home/home_injection.dart';
 import '../../features/profile/profile_injection.dart';
 import '../../features/theme/theme_injection.dart';
+import '../../features/workshop_users_roles/workshop_users_roles_injection.dart';
 import '../localization/localization_service.dart';
 import '../network/api_consumer.dart';
 import '../network/dio_consumer.dart';
 import '../network/network_info.dart';
 import '../storage/secure_storage_service.dart';
 import '../storage/shared_prefs_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../storage/storage_keys.dart';
-import '../../features/workshop_users_roles/workshop_users_roles_injection.dart';
 
-final sl = GetIt.instance; // sl = Service Locator
+final sl = GetIt.instance;
 
 Future<void> initCore() async {
-  // Storage
   await Hive.initFlutter();
+
   Hive.registerAdapter(ProductEntityAdapter());
   Hive.registerAdapter(DimensionsEntityAdapter());
   Hive.registerAdapter(ReviewEntityAdapter());
   Hive.registerAdapter(MetaEntityAdapter());
-  await Hive.openBox<ProductEntity>(StorageKeys.product_box);
+
+  await Hive.openBox<ProductEntity>(
+    StorageKeys.product_box,
+  );
 
   await SharedPreferencesService.init();
   await LocalizationService.initialize();
-  sl.registerLazySingleton(() => SharedPreferencesService());
-  sl.registerLazySingleton(() => LocalizationService());
+
   sl.registerLazySingleton(
-    () => SecureStorageService(const FlutterSecureStorage()),
+    () => SharedPreferencesService(),
+  );
+
+  sl.registerLazySingleton(
+    () => LocalizationService(),
+  );
+
+  sl.registerLazySingleton(
+    () => SecureStorageService(
+      const FlutterSecureStorage(),
+    ),
   );
 
   initTheme();
- // External
-sl.registerLazySingleton(() => InternetConnection());
-sl.registerLazySingleton(() => Dio());
 
-sl.registerLazySingleton<FirebaseFirestore>(
-  () => FirebaseFirestore.instance,
-);
-
-  // Core
-  sl.registerLazySingleton<NetworkInfo>(
-    () => NetworkInfoImpl(sl<InternetConnection>()),
+  sl.registerLazySingleton(
+    () => InternetConnection(),
   );
 
-  sl.registerLazySingleton<ApiConsumer>(() => DioConsumer(dio: sl<Dio>()));
+  sl.registerLazySingleton(
+    () => Dio(),
+  );
 
-  // Features
+  sl.registerLazySingleton<FirebaseFirestore>(
+    () => FirebaseFirestore.instance,
+  );
+
+  sl.registerLazySingleton<FirebaseFunctions>(
+    () => FirebaseFunctions.instanceFor(
+      region: 'africa-south1',
+    ),
+  );
+
+  sl.registerLazySingleton<NetworkInfo>(
+    () => NetworkInfoImpl(
+      sl<InternetConnection>(),
+    ),
+  );
+
+  sl.registerLazySingleton<ApiConsumer>(
+    () => DioConsumer(
+      dio: sl<Dio>(),
+    ),
+  );
+
   initAuthentication();
   initHome();
   initCart();

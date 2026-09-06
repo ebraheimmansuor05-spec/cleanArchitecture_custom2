@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../domain/entities/role_entity.dart';
 import '../../domain/entities/workshop_user_entity.dart';
 import '../../domain/enums/workshop_member_status.dart';
-import '../../domain/entities/role_entity.dart';
 import '../manager/role/role_cubit.dart';
 import '../manager/role/role_state.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import '../manager/workshop_user/workshop_user_cubit.dart';
+import '../manager/workshop_user/workshop_user_state.dart';
 
 class WorkshopUsersRolesList extends StatelessWidget {
   final List<WorkshopUserEntity> users;
@@ -23,9 +25,7 @@ class WorkshopUsersRolesList extends StatelessWidget {
         _WorkshopStaffHeader(
           totalUsers: users.length,
         ),
-
         const SizedBox(height: 16),
-
         if (users.isEmpty)
           const _NoUsersFound()
         else
@@ -61,9 +61,7 @@ class _WorkshopStaffHeader extends StatelessWidget {
             color: Color(0xFF25252D),
           ),
         ),
-
         const SizedBox(width: 10),
-
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: 10,
@@ -95,153 +93,211 @@ class WorkshopUserCard extends StatelessWidget {
     required this.user,
   });
 
+  void _updateStatus(
+    BuildContext context,
+    WorkshopMemberStatus status,
+  ) {
+    context.read<WorkshopUserCubit>().updateStatus(
+          workshopUserId: user.id,
+          status: status,
+          workshopId: user.workshopId,
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusInfo = _getStatusInfo(user.status);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFFE8E8ED),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 12,
-            offset: Offset(0, 4),
+    return BlocBuilder<WorkshopUserCubit, WorkshopUserState>(
+      builder: (context, state) {
+        final isUpdating = state is WorkshopUserUpdating &&
+            state.workshopUserId == user.id;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: const Color(0xFFE8E8ED),
+            ),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
             children: [
-              _UserAvatar(
-                userId: user.userId,
-                isActive:
-                    user.status == WorkshopMemberStatus.active,
-              ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: _UserInformation(
-                  user: user,
-                ),
-              ),
-
-              PopupMenuButton<String>(
-                icon: const Icon(
-                  Icons.more_vert_rounded,
-                  color: Color(0xFF777781),
-                ),
-                onSelected: (value) {},
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
-                    value: 'edit',
-                    child: Text('Edit member'),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _UserAvatar(
+                    userId: user.userId,
+                    isActive:
+                        user.status == WorkshopMemberStatus.active,
                   ),
-                  PopupMenuItem(
-                    value: 'role',
-                    child: Text('Change role'),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _UserInformation(
+                      user: user,
+                    ),
                   ),
-                  PopupMenuItem(
-                    value: 'remove',
-                    child: Text('Remove member'),
+                  PopupMenuButton<String>(
+                    enabled: !isUpdating &&
+                        user.status !=
+                            WorkshopMemberStatus.removed,
+                    icon: isUpdating
+                        ? const SizedBox.square(
+                            dimension: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.more_vert_rounded,
+                            color: Color(0xFF777781),
+                          ),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'activate':
+                          _updateStatus(
+                            context,
+                            WorkshopMemberStatus.active,
+                          );
+                          break;
+
+                        case 'suspend':
+                          _updateStatus(
+                            context,
+                            WorkshopMemberStatus.suspended,
+                          );
+                          break;
+                      }
+                    },
+                    itemBuilder: (context) {
+                      final items = <PopupMenuEntry<String>>[];
+
+                      if (user.status !=
+                          WorkshopMemberStatus.active) {
+                        items.add(
+                          const PopupMenuItem<String>(
+                            value: 'activate',
+                            child: Text('Activate member'),
+                          ),
+                        );
+                      }
+
+                      if (user.status ==
+                          WorkshopMemberStatus.active) {
+                        items.add(
+                          const PopupMenuItem<String>(
+                            value: 'suspend',
+                            child: Text('Suspend member'),
+                          ),
+                        );
+                      }
+
+                      items.add(
+                        const PopupMenuDivider(),
+                      );
+
+                      items.add(
+                        const PopupMenuItem<String>(
+                          value: 'profile',
+                          enabled: false,
+                          child: Text('Profile'),
+                        ),
+                      );
+
+                      return items;
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(
+                color: Color(0xFFEEEEF2),
+                height: 1,
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: _InfoItem(
+                      icon: Icons.badge_outlined,
+                      label: 'Role ID',
+                      value: _shortId(user.roleId),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _InfoItem(
+                      icon: Icons.calendar_today_outlined,
+                      label: 'Joined',
+                      value: _formatDate(user.joinedAt),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: isUpdating ? null : () {},
+                      icon: const Icon(
+                        Icons.person_outline_rounded,
+                        size: 18,
+                      ),
+                      label: const Text('Profile'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor:
+                            const Color(0xFF6046A5),
+                        side: const BorderSide(
+                          color: Color(0xFFD8D0EC),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusInfo.backgroundColor,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        isUpdating
+                            ? 'Updating...'
+                            : statusInfo.label,
+                        style: TextStyle(
+                          color: statusInfo.textColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ],
           ),
-
-          const SizedBox(height: 16),
-
-          const Divider(
-            color: Color(0xFFEEEEF2),
-            height: 1,
-          ),
-
-          const SizedBox(height: 14),
-
-          Row(
-            children: [
-              Expanded(
-                child: _InfoItem(
-                  icon: Icons.badge_outlined,
-                  label: 'Role ID',
-                  value: _shortId(user.roleId),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              Expanded(
-                child: _InfoItem(
-                  icon: Icons.calendar_today_outlined,
-                  label: 'Joined',
-                  value: _formatDate(user.joinedAt),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(
-                    Icons.person_outline_rounded,
-                    size: 18,
-                  ),
-                  label: const Text('Profile'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF6046A5),
-                    side: const BorderSide(
-                      color: Color(0xFFD8D0EC),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              Expanded(
-                child: Container(
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                  ),
-                  decoration: BoxDecoration(
-                    color: statusInfo.backgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    statusInfo.label,
-                    style: TextStyle(
-                      color: statusInfo.textColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -288,7 +344,6 @@ class _UserAvatar extends StatelessWidget {
             ),
           ),
         ),
-
         if (isActive)
           Positioned(
             right: -1,
@@ -333,9 +388,7 @@ class _UserInformation extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-
         const SizedBox(height: 5),
-
         Container(
           padding: const EdgeInsets.symmetric(
             horizontal: 8,
@@ -354,9 +407,7 @@ class _UserInformation extends StatelessWidget {
             ),
           ),
         ),
-
         const SizedBox(height: 7),
-
         Text(
           'Member ID: ${_shortUserId(user.userId)}',
           style: const TextStyle(
@@ -413,9 +464,7 @@ class _InfoItem extends StatelessWidget {
           size: 17,
           color: const Color(0xFF8A8A94),
         ),
-
         const SizedBox(width: 7),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,9 +476,7 @@ class _InfoItem extends StatelessWidget {
                   color: Color(0xFF9797A0),
                 ),
               ),
-
               const SizedBox(height: 3),
-
               Text(
                 value,
                 maxLines: 1,
@@ -470,9 +517,7 @@ class _NoUsersFound extends StatelessWidget {
               size: 34,
             ),
           ),
-
           const SizedBox(height: 16),
-
           const Text(
             'No staff members found',
             style: TextStyle(
@@ -481,9 +526,7 @@ class _NoUsersFound extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 6),
-
           const Text(
             'Try adjusting your search.',
             style: TextStyle(
@@ -541,6 +584,7 @@ _StatusInfo _getStatusInfo(
       );
   }
 }
+
 class KitchenFlowBottomNavigation extends StatelessWidget {
   const KitchenFlowBottomNavigation({
     super.key,
@@ -627,6 +671,7 @@ class _BottomNavItem extends StatelessWidget {
     );
   }
 }
+
 class RoleAccess extends StatelessWidget {
   final String searchQuery;
 
@@ -696,7 +741,9 @@ class RoleAccess extends StatelessWidget {
               100,
             ),
             itemCount: roles.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 14),
+            separatorBuilder: (_, _) => const SizedBox(
+              height: 14,
+            ),
             itemBuilder: (context, index) {
               return RoleCard(
                 role: roles[index],
@@ -709,7 +756,9 @@ class RoleAccess extends StatelessWidget {
       },
     );
   }
-}class RoleCard extends StatelessWidget {
+}
+
+class RoleCard extends StatelessWidget {
   final RoleEntity role;
 
   const RoleCard({
@@ -765,9 +814,7 @@ class RoleAccess extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 14),
-
           Text(
             role.description,
             style: const TextStyle(
@@ -775,9 +822,7 @@ class RoleAccess extends StatelessWidget {
               fontSize: 14,
             ),
           ),
-
           const SizedBox(height: 16),
-
           const Text(
             'Permissions',
             style: TextStyle(
@@ -786,9 +831,7 @@ class RoleAccess extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-
           const SizedBox(height: 10),
-
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -817,7 +860,9 @@ class RoleAccess extends StatelessWidget {
       ),
     );
   }
-}class _NoRolesFound extends StatelessWidget {
+}
+
+class _NoRolesFound extends StatelessWidget {
   const _NoRolesFound();
 
   @override

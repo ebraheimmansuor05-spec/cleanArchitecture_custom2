@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/worker_creation_result_entity.dart';
 import '../entities/workshop_user_entity.dart';
+import '../enums/workshop_member_status.dart';
 
 abstract class WorkshopUsersRolesRepository {
   Future<Either<Failure, List<WorkshopUserEntity>>> getWorkshopUsers(
@@ -24,5 +25,10 @@ abstract class WorkshopUsersRolesRepository {
     required String password,
     required String roleId,
     required String workshopId,
+  });
+
+  Future<Either<Failure, WorkshopUserEntity>> updateWorkshopUserStatus({
+    required String workshopUserId,
+    required WorkshopMemberStatus status,
   });
 }

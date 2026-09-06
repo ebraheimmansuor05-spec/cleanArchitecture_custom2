@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/worker_creation_result_entity.dart';
 import '../../domain/entities/workshop_user_entity.dart';
+import '../../domain/enums/workshop_member_status.dart';
 import '../../domain/repositories/workshop_users_roles_repository.dart';
 import '../datasources/workshop_users_roles_remote_data_source.dart';
 import '../models/workshop_user_model.dart';
@@ -16,11 +17,13 @@ class WorkshopUsersRolesRepositoryImpl
   );
 
   @override
-  Future<Either<Failure, List<WorkshopUserEntity>>> getWorkshopUsers(
+  Future<Either<Failure, List<WorkshopUserEntity>>>
+      getWorkshopUsers(
     String workshopId,
   ) async {
     try {
-      final models = await _remoteDataSource.getWorkshopUsers(
+      final models =
+          await _remoteDataSource.getWorkshopUsers(
         workshopId,
       );
 
@@ -37,7 +40,8 @@ class WorkshopUsersRolesRepositoryImpl
   }
 
   @override
-  Future<Either<Failure, WorkshopUserEntity>> createWorkshopUser(
+  Future<Either<Failure, WorkshopUserEntity>>
+      createWorkshopUser(
     WorkshopUserEntity entity, {
     required String workerId,
   }) async {
@@ -77,7 +81,8 @@ class WorkshopUsersRolesRepositoryImpl
   }
 
   @override
-  Future<Either<Failure, WorkshopUserEntity?>> getWorkshopUserByUserId(
+  Future<Either<Failure, WorkshopUserEntity?>>
+      getWorkshopUserByUserId(
     String userId,
   ) async {
     try {
@@ -97,7 +102,31 @@ class WorkshopUsersRolesRepositoryImpl
   }
 
   @override
-  Future<Either<Failure, WorkerCreationResultEntity>> createWorker({
+  Future<Either<Failure, WorkshopUserEntity>>
+      updateWorkshopUserStatus({
+    required String workshopUserId,
+    required WorkshopMemberStatus status,
+  }) async {
+    try {
+      final model =
+          await _remoteDataSource.updateWorkshopUserStatus(
+        workshopUserId: workshopUserId,
+        status: status,
+      );
+
+      return Right(
+        model.toEntity(),
+      );
+    } catch (e) {
+      return Left(
+        AuthFailure(e.toString()),
+      );
+    }
+  }
+
+  @override
+  Future<Either<Failure, WorkerCreationResultEntity>>
+      createWorker({
     required String displayName,
     required String phone,
     required String password,

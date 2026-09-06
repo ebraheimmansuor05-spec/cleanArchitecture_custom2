@@ -3,6 +3,7 @@
 // ignore_for_file: subtype_of_sealed_class
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -10,6 +11,8 @@ import 'package:flutter_clean_architecture_template/features/workshop_users_role
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/data/models/role_model.dart';
 
 class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
+
+class MockFirebaseFunctions extends Mock implements FirebaseFunctions {}
 
 class MockCollectionReference extends Mock
     implements CollectionReference<Map<String, dynamic>> {}
@@ -28,11 +31,17 @@ class MockDocumentSnapshot extends Mock
 
 void main() {
   late MockFirebaseFirestore firestore;
+  late MockFirebaseFunctions functions;
   late FirebaseWorkshopUsersRolesDataSource dataSource;
 
   setUp(() {
     firestore = MockFirebaseFirestore();
-    dataSource = FirebaseWorkshopUsersRolesDataSource(firestore);
+    functions = MockFirebaseFunctions();
+
+    dataSource = FirebaseWorkshopUsersRolesDataSource(
+      firestore,
+      functions,
+    );
   });
 
   group('getRoles', () {

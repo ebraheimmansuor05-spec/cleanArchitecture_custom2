@@ -8,8 +8,10 @@ import 'package:flutter_clean_architecture_template/features/authentication/data
 import 'package:flutter_clean_architecture_template/features/authentication/domain/entities/auth_user_entity.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/params/auth_credentials.dart';
 import 'package:flutter_clean_architecture_template/features/authentication/domain/repositories/auth_repository.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/entities/worker_creation_result_entity.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/entities/workshop_entity.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/entities/workshop_user_entity.dart';
+import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/enums/workshop_member_status.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/repositories/workshop_repository.dart';
 import 'package:flutter_clean_architecture_template/features/workshop_users_roles/domain/repositories/workshop_users_roles_repository.dart';
 
@@ -104,14 +106,46 @@ class FakeWorkshopUsersRolesRepository
 
   late Either<Failure, WorkshopUserEntity> createWorkshopUserResult;
 
+  Either<Failure, WorkerCreationResultEntity> createWorkerResult = Right(
+    const WorkerCreationResultEntity(
+      workerId: 'worker-1',
+      workerLoginId: 'WK-TEST1234',
+      temporaryPassword: 'password123',
+      workshopUserId: 'workshop-user-1',
+    ),
+  );
+
+  Either<Failure, WorkshopUserEntity> updateWorkshopUserStatusResult =
+      Right(
+    WorkshopUserEntity(
+      id: 'workshop-user-1',
+      workshopId: 'workshop-1',
+      userId: 'worker-1',
+      roleId: 'worker',
+      status: WorkshopMemberStatus.active,
+      joinedAt: DateTime(2026, 1, 1),
+    ),
+  );
+
   int getWorkshopUsersCalls = 0;
   int createWorkshopUserCalls = 0;
   int getWorkshopUserByUserIdCalls = 0;
+  int createWorkerCalls = 0;
+  int updateWorkshopUserStatusCalls = 0;
 
   String? lastWorkshopId;
   String? lastUserId;
   WorkshopUserEntity? lastCreatedWorkshopUser;
   String? lastWorkerId;
+
+  String? lastWorkerDisplayName;
+  String? lastWorkerPhone;
+  String? lastWorkerPassword;
+  String? lastWorkerRoleId;
+  String? lastWorkerWorkshopId;
+
+  String? lastUpdatedWorkshopUserId;
+  WorkshopMemberStatus? lastUpdatedStatus;
 
   @override
   Future<Either<Failure, List<WorkshopUserEntity>>> getWorkshopUsers(
@@ -140,6 +174,39 @@ class FakeWorkshopUsersRolesRepository
     getWorkshopUserByUserIdCalls++;
     lastUserId = userId;
     return getWorkshopUserByUserIdResult;
+  }
+
+  @override
+  Future<Either<Failure, WorkerCreationResultEntity>> createWorker({
+    required String displayName,
+    required String phone,
+    required String password,
+    required String roleId,
+    required String workshopId,
+  }) async {
+    createWorkerCalls++;
+
+    lastWorkerDisplayName = displayName;
+    lastWorkerPhone = phone;
+    lastWorkerPassword = password;
+    lastWorkerRoleId = roleId;
+    lastWorkerWorkshopId = workshopId;
+
+    return createWorkerResult;
+  }
+
+  @override
+  Future<Either<Failure, WorkshopUserEntity>>
+      updateWorkshopUserStatus({
+    required String workshopUserId,
+    required WorkshopMemberStatus status,
+  }) async {
+    updateWorkshopUserStatusCalls++;
+
+    lastUpdatedWorkshopUserId = workshopUserId;
+    lastUpdatedStatus = status;
+
+    return updateWorkshopUserStatusResult;
   }
 }
 

@@ -1,5 +1,3 @@
-// lib/features/workshop_users_roles/data/models/workshop_user_model.dart
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../domain/entities/workshop_user_entity.dart';
@@ -20,8 +18,11 @@ class WorkshopUserModel extends WorkshopUserEntity {
     DocumentSnapshot<Map<String, dynamic>> document,
   ) {
     final data = document.data();
+
     if (data == null) {
-      throw StateError('Workshop user document does not contain data.');
+      throw StateError(
+        'Workshop user document does not contain data.',
+      );
     }
 
     return WorkshopUserModel(
@@ -34,6 +35,109 @@ class WorkshopUserModel extends WorkshopUserEntity {
       ),
       joinedAt: (data['joinedAt'] as Timestamp).toDate(),
       workerId: data['workerId'] as String?,
+    );
+  }
+
+  factory WorkshopUserModel.fromMap(
+    Map<String, dynamic> map,
+  ) {
+    final id = map['id'];
+    final workshopId = map['workshopId'];
+    final userId = map['userId'];
+    final roleId = map['roleId'];
+    final status = map['status'];
+    final joinedAt = map['joinedAt'];
+    final workerId = map['workerId'];
+
+    if (id is! String || id.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid workshop user id.',
+      );
+    }
+
+    if (workshopId is! String || workshopId.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid workshop id.',
+      );
+    }
+
+    if (userId is! String || userId.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid user id.',
+      );
+    }
+
+    if (roleId is! String || roleId.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid role id.',
+      );
+    }
+
+    if (status is! String || status.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid workshop member status.',
+      );
+    }
+
+    final parsedStatus =
+        WorkshopMemberStatus.values.firstWhere(
+      (value) => value.name == status,
+      orElse: () => throw FormatException(
+        'Unknown workshop member status: $status',
+      ),
+    );
+
+    final parsedJoinedAt = _parseJoinedAt(joinedAt);
+
+    return WorkshopUserModel(
+      id: id,
+      workshopId: workshopId,
+      userId: userId,
+      roleId: roleId,
+      status: parsedStatus,
+      joinedAt: parsedJoinedAt,
+      workerId: workerId is String ? workerId : null,
+    );
+  }
+
+  static DateTime _parseJoinedAt(
+    dynamic value,
+  ) {
+    if (value is Timestamp) {
+      return value.toDate();
+    }
+
+    if (value is DateTime) {
+      return value;
+    }
+
+    if (value is String) {
+      final parsed = DateTime.tryParse(value);
+
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+
+    if (value is Map) {
+      final seconds =
+          value['_seconds'] ?? value['seconds'];
+
+      final nanoseconds =
+          value['_nanoseconds'] ??
+          value['nanoseconds'] ??
+          0;
+
+      if (seconds is num && nanoseconds is num) {
+        return DateTime.fromMillisecondsSinceEpoch(
+          seconds.toInt() * 1000 +
+              (nanoseconds.toInt() ~/ 1000000),
+        );
+      }
+    }
+
+    throw const FormatException(
+      'Invalid joinedAt value.',
     );
   }
 
