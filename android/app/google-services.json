@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "357710887433",
+    "project_id": "kitchenflow-76b6d",
+    "storage_bucket": "kitchenflow-76b6d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:357710887433:android:ff1dcc84611463cf3396d8",
+        "android_client_info": {
+          "package_name": "com.example.flutter_clean_architecture_template"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBUsQd8drLJzqbwPMCKNJUgEVdBZUJrZU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

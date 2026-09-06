@@ -1,26 +1,158 @@
+
 {
-    "app_name": "App Name",
-    "authentication": {
-        "login": "Login",
-        "register": "Register",
-        "forgot_password": "Forgot Password",
-        "reset_password": "Reset Password",
-        "verify_code": "Verify Code",
-        "phone_number": "Phone Number",
-        "password": "Password",
-        "confirm_password": "Confirm Password",
-        "code": "Code",
-        "send_code": "Send Code",
-        "verify": "Verify",
-        "login_with_phone": "Login with Phone",
-        "login_with_email": "Login with Email",
-        "login_with_google": "Login with Google",
-        "login_with_facebook": "Login with Facebook",
-        "login_with_apple": "Login with Apple"
+  "app_name": "KitchenFlow",
+  "authentication": {
+    "brand_name": "KitchenFlow",
+    "brand_tagline": "تميز الورشة، بتنظيم.",
+    "secure_access": "دخول آمن إلى الورشة",
+    "welcome_back": "تسجيل دخول الموظفين",
+    "login_subtitle": "سجّل الدخول باستخدام البريد الإلكتروني لحساب الورشة.",
+    "email": "البريد الإلكتروني",
+    "email_hint": "name@example.com",
+    "login": "تسجيل الدخول",
+    "sign_in": "دخول",
+    "register": "إنشاء حساب",
+    "register_title": "إنشاء حسابك",
+    "register_subtitle": "أنشئ هويتك في KitchenFlow. سيتم إعداد الورشة بشكل منفصل.",
+    "create_account": "إنشاء الحساب",
+    "no_account": "جديد على KitchenFlow؟",
+    "already_account": "لديك حساب بالفعل؟ سجّل الدخول",
+    "forgot_password": "هل نسيت كلمة المرور؟",
+    "reset_password": "إعادة تعيين كلمة المرور",
+    "recovery_title": "استعادة حسابك",
+    "recovery_subtitle": "سنرسل رابطًا آمنًا لإعادة تعيين كلمة المرور إلى بريدك الإلكتروني.",
+    "send_reset_link": "إرسال رابط إعادة التعيين",
+    "recovery_sent": "إذا كان بالإمكان استعادة الحساب لهذا البريد الإلكتروني، فسيتم إرسال تعليمات إعادة التعيين.",
+    "back_to_login": "العودة إلى تسجيل الدخول",
+    "show_password": "إظهار كلمة المرور",
+    "hide_password": "إخفاء كلمة المرور",
+    "session_checking": "جارٍ التحقق من جلستك الآمنة...",
+    "account_session": "جلسة الحساب",
+    "signed_in": "تم تسجيل الدخول",
+    "identity_unavailable": "الهوية الموثقة",
+    "email_verified": "تم التحقق من البريد الإلكتروني",
+    "email_not_verified": "لم يتم التحقق من البريد الإلكتروني",
+    "open_workspace": "فتح مساحة العمل",
+    "logout": "تسجيل الخروج",
+    "logging_out": "جارٍ تسجيل الخروج...",
+    "verify_code": "تأكيد الرمز",
+    "phone_number": "رقم الهاتف",
+    "password": "كلمة المرور",
+    "confirm_password": "تأكيد كلمة المرور",
+    "code": "الرمز",
+    "send_code": "إرسال الرمز",
+    "verify": "تأكيد",
+    "login_with_phone": "تسجيل الدخول برقم الهاتف",
+    "login_with_email": "تسجيل الدخول بالبريد الإلكتروني",
+    "login_with_google": "تسجيل الدخول باستخدام Google",
+    "login_with_facebook": "تسجيل الدخول باستخدام Facebook",
+    "login_with_apple": "تسجيل الدخول باستخدام Apple",
+
+    "account_type": "نوع الحساب",
+    "owner": "صاحب الورشة",
+    "owner_description": "أنا صاحب ورشة",
+    "worker": "عامل / موظف",
+    "worker_description": "أعمل في ورشة موجودة بالفعل",
+    "workshop_name": "اسم الورشة",
+
+    "validation": {
+      "required": "هذا الحقل مطلوب.",
+      "invalid_email": "أدخل بريدًا إلكترونيًا صحيحًا.",
+      "passwords_do_not_match": "كلمتا المرور غير متطابقتين."
     },
+
+
+    "errors": {
+      "invalid_credentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+      "invalid_email": "أدخل بريدًا إلكترونيًا صحيحًا.",
+      "email_already_in_use": "يوجد حساب بالفعل بهذا البريد الإلكتروني.",
+      "weak_password": "مزود المصادقة رفض كلمة المرور لأنها ضعيفة جدًا.",
+      "user_disabled": "تم تعطيل هذا الحساب. تواصل مع الدعم.",
+      "too_many_requests": "عدد المحاولات كبير جدًا. انتظر قليلًا ثم حاول مرة أخرى.",
+      "network": "تحقق من اتصالك بالإنترنت وحاول مرة أخرى.",
+      "operation_not_allowed": "عملية المصادقة هذه غير متاحة.",
+      "session_expired": "انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.",
+      "unknown": "تعذر إكمال عملية المصادقة. حاول مرة أخرى.",
     "navigation": {
         "home": "Home",
         "cart": "Cart",
         "profile": "Profile"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "workshop_overview": "Workshop Overview",
+        "workshop_overview_subtitle": "Manage production, inventory & finances in real-time.",
+        "quick_actions": "Quick Actions",
+        "notifications_unread": "Unread notifications",
+        "actions": {
+            "menu": "Menu",
+            "notifications": "Notifications",
+            "new_order": "New Order",
+            "inventory": "Inventory",
+            "logs": "Logs",
+            "employees": "Employees",
+            "payment": "Payment",
+            "view_all": "View All",
+            "refill": "Refill",
+            "primary": "Main action",
+            "unavailable": "{action} is not available until its owning feature is connected."
+        },
+        "operations": {
+            "title": "Operations",
+            "live_updates": "Live Updates",
+            "live_preview": "Live Updates · Preview Data",
+            "todays_orders": "Today's Orders",
+            "late_orders": "Late Orders",
+            "in_progress": "In Progress",
+            "low_stock": "Low Stock",
+            "pending_pickup": "4 pending pickup",
+            "action_required": "Action required",
+            "workshop_floor": "Workshop floor",
+            "aluminum_extrusions": "Aluminum extrusions"
+        },
+        "financial": {
+            "title": "Financial Summary",
+            "subtitle": "Performance for current billing cycle",
+            "total_revenue": "Total Revenue",
+            "pending_payments": "Pending Payments",
+            "revenue_goal": "Revenue Goal",
+            "achieved": "Achieved"
+        },
+        "activity": {
+            "title": "Worker Activity",
+            "welding_completed": "Completed welding on Project #822 - Hotel Frames",
+            "measurements_updated": "Updated measurements for Villa Terrace Doors",
+            "production_started": "Started production on Project #845 - Office Windows",
+            "time_12m": "12m ago",
+            "time_45m": "45m ago",
+            "time_1h": "1h ago"
+        },
+        "inventory_alert": {
+            "title": "Critical Inventory Alert",
+            "message": "{count} profiles are below the minimum safety threshold. Order replenishment immediately."
+        },
+        "navigation": {
+            "home": "Home",
+            "orders": "Orders",
+            "production": "Production",
+            "stock": "Stock",
+            "profile": "Profile"
+        },
+        "states": {
+            "empty_title": "No dashboard data",
+            "empty_message": "Dashboard information is not available for the current context.",
+            "failure_title": "Dashboard unavailable",
+            "failure_message": "Dashboard information could not be displayed. Please try again.",
+            "partial_message": "Some dashboard sections are unavailable. Available information is still shown.",
+            "retry": "Try again"
+        }
     }
+  },
+
+  "navigation": {
+    "home": "الرئيسية",
+    "cart": "السلة",
+    "profile": "الملف الشخصي"
+  }
+}
 }

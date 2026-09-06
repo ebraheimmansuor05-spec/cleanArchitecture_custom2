@@ -1,0 +1,36 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "kitchenflow",
+          "appId": "1:000000000000:android:0000000000000000000000",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "kitchenflow",
+          "appId": "1:000000000000:ios:0000000000000000000000",
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "web": {
+        "default": {
+          "projectId": "kitchenflow",
+          "appId": "1:000000000000:web:0000000000000000000000",
+          "fileOutput": "web/firebase-config.js"
+        }
+      }
+    }
+  },
+  "firestore": {
+    "database": "(default)",
+    "location": "africa-south1",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions"
+  }
+}
