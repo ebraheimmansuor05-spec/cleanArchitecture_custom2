@@ -3,19 +3,23 @@
     "platforms": {
       "android": {
         "default": {
-          "projectId": "kitchenflow-76b6d",
-          "appId": "1:357710887433:android:ff1dcc84611463cf3396d8",
+          "projectId": "kitchenflow",
+          "appId": "1:000000000000:android:0000000000000000000000",
           "fileOutput": "android/app/google-services.json"
         }
       },
-      "dart": {
-        "lib/firebase_options.dart": {
-          "projectId": "kitchenflow-76b6d",
-          "configurations": {
-            "android": "1:357710887433:android:ff1dcc84611463cf3396d8",
-            "ios": "1:357710887433:ios:a23d1a1b4a3123213396d8",
-            "web": "1:357710887433:web:d3423ff62a5e3df43396d8"
-          }
+      "ios": {
+        "default": {
+          "projectId": "kitchenflow",
+          "appId": "1:000000000000:ios:0000000000000000000000",
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "web": {
+        "default": {
+          "projectId": "kitchenflow",
+          "appId": "1:000000000000:web:0000000000000000000000",
+          "fileOutput": "web/firebase-config.js"
         }
       }
     }
@@ -25,5 +29,8 @@
     "location": "africa-south1",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "functions": {
+    "source": "functions"
   }
 }

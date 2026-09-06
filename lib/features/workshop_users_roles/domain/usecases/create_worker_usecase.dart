@@ -1,10 +1,7 @@
-// lib/features/workshop_users_roles/domain/usecases/create_worker_usecase.dart
-
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
-import '../entities/workshop_user_entity.dart';
-import '../enums/workshop_member_status.dart';
+import '../entities/worker_creation_result_entity.dart';
 import '../repositories/workshop_users_roles_repository.dart';
 import '../repositories/workshop_repository.dart';
 
@@ -17,73 +14,65 @@ class CreateWorkerUseCase {
     this._workshopRepository,
   );
 
-  Future<Either<Failure, CreateWorkerResult>> call({
+  Future<Either<Failure, WorkerCreationResultEntity>> call({
     required String displayName,
     required String phone,
     required String password,
     required String roleId,
     required String workshopId,
   }) async {
-    // 1. التحقق من وجود الـ Workshop
-    final workshopResult = await _workshopRepository.getWorkshop(workshopId);
-    if (workshopResult.isLeft()) {
-      return Left(workshopResult.fold(
-        (failure) => failure,
-        (_) => AuthFailure('Workshop not found'),
-      ));
+    if (displayName.trim().isEmpty) {
+      return Left(
+        AuthFailure('Worker display name is required.'),
+      );
     }
 
-    // 2. توليد Worker Login ID فريد
-    final workerLoginId = await _generateUniqueWorkerLoginId(workshopId);
+    if (phone.trim().isEmpty) {
+      return Left(
+        AuthFailure('Worker phone is required.'),
+      );
+    }
 
-    // 3. إنشاء العامل في الـ Repository
-    final createResult = await _workshopUsersRolesRepository.createWorkshopUser(
-      WorkshopUserEntity(
-        id: '',
-        workshopId: workshopId,
-        userId: '', // سيتم تعبئته بعد إنشاء Auth
-        roleId: roleId,
-        status: WorkshopMemberStatus.active,
-        joinedAt: DateTime.now(),
-        workerId: workerLoginId,
-      ),
-      workerId: workerLoginId,
+    if (password.length < 6) {
+      return Left(
+        AuthFailure(
+          'Worker password must contain at least 6 characters.',
+        ),
+      );
+    }
+
+    if (roleId.trim().isEmpty) {
+      return Left(
+        AuthFailure('Worker role is required.'),
+      );
+    }
+
+    if (workshopId.trim().isEmpty) {
+      return Left(
+        AuthFailure('Workshop is required.'),
+      );
+    }
+
+    final workshopResult =
+        await _workshopRepository.getWorkshop(
+      workshopId,
     );
 
-    if (createResult.isLeft()) {
-      return Left(createResult.fold(
-        (failure) => failure,
-        (_) => AuthFailure('Failed to create worker'),
-      ));
+    if (workshopResult.isLeft()) {
+      return Left(
+        workshopResult.fold(
+          (failure) => failure,
+          (_) => AuthFailure('Workshop not found.'),
+        ),
+      );
     }
 
-    final createdUser = createResult.fold(
-      (failure) => null,
-      (data) => data,
-    )!;
-
-    return Right(CreateWorkerResult(
-      workerLoginId: workerLoginId,
-      temporaryPassword: password,
-      workshopUser: createdUser,
-    ));
+    return _workshopUsersRolesRepository.createWorker(
+      displayName: displayName,
+      phone: phone,
+      password: password,
+      roleId: roleId,
+      workshopId: workshopId,
+    );
   }
-
-  Future<String> _generateUniqueWorkerLoginId(String workshopId) async {
-    // استخدام timestamp لتوليد ID فريد
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    return 'W-${timestamp.toString().substring(8)}';
-  }
-}
-
-class CreateWorkerResult {
-  final String workerLoginId;
-  final String temporaryPassword;
-  final WorkshopUserEntity workshopUser;
-
-  const CreateWorkerResult({
-    required this.workerLoginId,
-    required this.temporaryPassword,
-    required this.workshopUser,
-  });
 }

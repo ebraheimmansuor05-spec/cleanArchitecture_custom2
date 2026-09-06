@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../models/role_model.dart';
 import '../models/workshop_model.dart';
 import '../models/workshop_user_model.dart';
+import '../models/worker_creation_result_model.dart';
 
 abstract class WorkshopUsersRolesRemoteDataSource {
   Future<List<WorkshopUserModel>> getWorkshopUsers(String workshopId);
@@ -28,13 +30,25 @@ abstract class WorkshopUsersRolesRemoteDataSource {
   });
 
   Future<WorkshopUserModel?> getWorkshopUserByUserId(String userId);
+
+  Future<WorkerCreationResultModel> createWorker({
+    required String displayName,
+    required String phone,
+    required String password,
+    required String roleId,
+    required String workshopId,
+  });
 }
 
 class FirebaseWorkshopUsersRolesDataSource
     implements WorkshopUsersRolesRemoteDataSource {
   final FirebaseFirestore _firestore;
+  final FirebaseFunctions _functions;
 
-  const FirebaseWorkshopUsersRolesDataSource(this._firestore);
+  const FirebaseWorkshopUsersRolesDataSource(
+    this._firestore,
+    this._functions,
+  );
 
   @override
   Future<List<WorkshopUserModel>> getWorkshopUsers(
@@ -49,9 +63,7 @@ class FirebaseWorkshopUsersRolesDataSource
         .get();
 
     return snapshot.docs
-        .map(
-          WorkshopUserModel.fromFirestore,
-        )
+        .map(WorkshopUserModel.fromFirestore)
         .toList();
   }
 
@@ -84,32 +96,30 @@ class FirebaseWorkshopUsersRolesDataSource
   Future<WorkshopModel> createWorkshop(
     WorkshopModel workshop,
   ) async {
+    final data = workshop.toJson();
+    data.remove('id');
+
     final docRef = await _firestore
         .collection('workshops')
-        .add(
-          workshop.toJson(),
-        );
+        .add(data);
 
     final doc = await docRef.get();
+    final dataAfterCreate = doc.data();
 
-    final data = doc.data();
-
-    if (data == null) {
+    if (dataAfterCreate == null) {
       throw StateError(
         'Workshop document was created but no data was returned.',
       );
     }
 
     return WorkshopModel.fromJson({
-      ...data,
+      ...dataAfterCreate,
       'id': doc.id,
     });
   }
 
   @override
-  Future<List<RoleModel>> getRoles(
-    String workshopId,
-  ) async {
+  Future<List<RoleModel>> getRoles(String workshopId) async {
     final snapshot = await _firestore
         .collection('roles')
         .where(
@@ -129,11 +139,8 @@ class FirebaseWorkshopUsersRolesDataSource
   }
 
   @override
-  Future<RoleModel> createRole(
-    RoleModel role,
-  ) async {
+  Future<RoleModel> createRole(RoleModel role) async {
     final data = role.toJson();
-
     data.remove('id');
 
     final docRef = await _firestore
@@ -141,7 +148,6 @@ class FirebaseWorkshopUsersRolesDataSource
         .add(data);
 
     final doc = await docRef.get();
-
     final persistedData = doc.data();
 
     if (persistedData == null) {
@@ -157,9 +163,7 @@ class FirebaseWorkshopUsersRolesDataSource
   }
 
   @override
-  Future<RoleModel> updateRole(
-    RoleModel role,
-  ) async {
+  Future<RoleModel> updateRole(RoleModel role) async {
     if (role.id.trim().isEmpty) {
       throw ArgumentError(
         'Cannot update a role without a role id.',
@@ -171,7 +175,6 @@ class FirebaseWorkshopUsersRolesDataSource
         .doc(role.id);
 
     final data = role.toJson();
-
     data.remove('id');
 
     await docRef.set(
@@ -180,7 +183,6 @@ class FirebaseWorkshopUsersRolesDataSource
     );
 
     final doc = await docRef.get();
-
     final persistedData = doc.data();
 
     if (!doc.exists || persistedData == null) {
@@ -219,9 +221,7 @@ class FirebaseWorkshopUsersRolesDataSource
     final doc = await docRef.get();
 
     if (!doc.exists) {
-      throw StateError(
-        'Role does not exist.',
-      );
+      throw StateError('Role does not exist.');
     }
 
     final data = doc.data();
@@ -246,8 +246,31 @@ class FirebaseWorkshopUsersRolesDataSource
     WorkshopUserModel user, {
     required String workerId,
   }) async {
-    final data = user.toFirestore();
+    if (user.userId.trim().isEmpty) {
+      throw ArgumentError(
+        'Cannot create workshop membership without a user id.',
+      );
+    }
 
+    if (user.workshopId.trim().isEmpty) {
+      throw ArgumentError(
+        'Cannot create workshop membership without a workshop id.',
+      );
+    }
+
+    if (user.roleId.trim().isEmpty) {
+      throw ArgumentError(
+        'Cannot create workshop membership without a role id.',
+      );
+    }
+
+    if (workerId.trim().isEmpty) {
+      throw ArgumentError(
+        'Cannot create workshop membership without a worker id.',
+      );
+    }
+
+    final data = user.toFirestore();
     data['workerId'] = workerId;
 
     final docRef = await _firestore
@@ -263,6 +286,10 @@ class FirebaseWorkshopUsersRolesDataSource
   Future<WorkshopUserModel?> getWorkshopUserByUserId(
     String userId,
   ) async {
+    if (userId.trim().isEmpty) {
+      return null;
+    }
+
     final snapshot = await _firestore
         .collection('workshop_users')
         .where(
@@ -279,5 +306,32 @@ class FirebaseWorkshopUsersRolesDataSource
     return WorkshopUserModel.fromFirestore(
       snapshot.docs.first,
     );
+  }
+
+  @override
+  Future<WorkerCreationResultModel> createWorker({
+    required String displayName,
+    required String phone,
+    required String password,
+    required String roleId,
+    required String workshopId,
+  }) async {
+    final callable = _functions.httpsCallable(
+      'createWorker',
+    );
+
+    final result = await callable.call({
+      'displayName': displayName.trim(),
+      'phone': phone.trim(),
+      'password': password,
+      'roleId': roleId.trim(),
+      'workshopId': workshopId.trim(),
+    });
+
+    final data = Map<String, dynamic>.from(
+      result.data as Map,
+    );
+
+    return WorkerCreationResultModel.fromMap(data);
   }
 }
