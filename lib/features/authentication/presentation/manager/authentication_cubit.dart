@@ -1,5 +1,3 @@
-// lib/features/authentication/presentation/manager/authentication_cubit.dart
-
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -8,11 +6,11 @@ import '../../../workshop_users_roles/domain/entities/workshop_entity.dart';
 import '../../../workshop_users_roles/domain/usecases/create_workshop_usecase.dart';
 import '../../domain/entities/auth_failure.dart';
 import '../../domain/entities/auth_user_entity.dart';
+import '../../domain/enums/account_type.dart';
 import '../../domain/params/auth_credentials.dart';
 import '../../domain/usecases/auth_use_cases.dart';
 import '../../domain/usecases/worker_login_usecase.dart';
 import 'authentication_state.dart';
-import '../../domain/enums/account_type.dart';
 
 enum AuthenticationAction {
   login,
@@ -34,18 +32,31 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     required this.sendPasswordResetUseCase,
     required this.createWorkshopUseCase,
     required this.workerLoginUseCase,
-  }) : super( AuthenticationInitial());
+  }) : super(AuthenticationInitial());
 
-  Future<void> login({required String email, required String password}) async {
+  Future<void> login({
+    required String email,
+    required String password,
+  }) async {
     if (state is AuthenticationLoading) return;
 
     const action = AuthenticationAction.login;
-    emit(const AuthenticationLoading(action));
+
+    emit(
+      const AuthenticationLoading(action),
+    );
 
     final result = await loginUseCase(
-      LoginCredentials(email: email.trim(), password: password),
+      LoginCredentials(
+        email: email.trim(),
+        password: password,
+      ),
     );
-    _emitResult(action, result);
+
+    _emitResult(
+      action,
+      result,
+    );
   }
 
   Future<void> register({
@@ -58,9 +69,13 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     if (state is AuthenticationLoading) return;
 
     const action = AuthenticationAction.register;
-    emit(const AuthenticationLoading(action));
 
-    final registrationResult = await registerUseCase(
+    emit(
+      const AuthenticationLoading(action),
+    );
+
+    final registrationResult =
+        await registerUseCase(
       RegistrationCredentials(
         email: email.trim(),
         password: password,
@@ -74,14 +89,26 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
 
     await registrationResult.fold(
       (failure) async {
-        emit(_failureState(action, failure));
+        emit(
+          _failureState(
+            action,
+            failure,
+          ),
+        );
       },
       (user) async {
         if (accountType == AccountType.worker) {
-          emit(AuthenticationSuccess(action, user: user));
+          emit(
+            AuthenticationSuccess(
+              action,
+              user: user,
+            ),
+          );
           return;
         }
-        final workshopResult = await createWorkshopUseCase(
+
+        final workshopResult =
+            await createWorkshopUseCase(
           WorkshopEntity(
             id: '',
             ownerId: user.id,
@@ -95,10 +122,20 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
 
         workshopResult.fold(
           (failure) {
-            emit(_failureState(action, failure));
+            emit(
+              _failureState(
+                action,
+                failure,
+              ),
+            );
           },
           (_) {
-            emit(AuthenticationSuccess(action, user: user));
+            emit(
+              AuthenticationSuccess(
+                action,
+                user: user,
+              ),
+            );
           },
         );
       },
@@ -106,46 +143,89 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
   }
 
   Future<void> workerLogin({
-    required String email,
+    required String workerLoginId,
     required String password,
   }) async {
     if (state is AuthenticationLoading) return;
 
-    const action = AuthenticationAction.workerLogin;
-    emit(const AuthenticationLoading(action));
+    const action =
+        AuthenticationAction.workerLogin;
+
+    emit(
+      const AuthenticationLoading(action),
+    );
 
     final result = await workerLoginUseCase(
-      email: email.trim(),
+      workerLoginId: workerLoginId.trim(),
       password: password,
     );
 
     if (isClosed) return;
 
     result.fold(
-      (failure) => emit(_failureState(action, failure)),
-      (user) => emit(AuthenticationSuccess(action, user: user)),
+      (failure) {
+        emit(
+          _failureState(
+            action,
+            failure,
+          ),
+        );
+      },
+      (user) {
+        emit(
+          AuthenticationSuccess(
+            action,
+            user: user,
+          ),
+        );
+      },
     );
   }
 
-  Future<void> sendPasswordResetEmail(String email) async {
+  Future<void> sendPasswordResetEmail(
+    String email,
+  ) async {
     if (state is AuthenticationLoading) return;
 
-    const action = AuthenticationAction.passwordReset;
-    emit(const AuthenticationLoading(action));
+    const action =
+        AuthenticationAction.passwordReset;
 
-    final result = await sendPasswordResetUseCase(email.trim());
+    emit(
+      const AuthenticationLoading(action),
+    );
+
+    final result =
+        await sendPasswordResetUseCase(
+      email.trim(),
+    );
 
     if (isClosed) return;
 
     result.fold(
-      (failure) => emit(_failureState(action, failure)),
-      (_) => emit(const AuthenticationSuccess(action)),
+      (failure) {
+        emit(
+          _failureState(
+            action,
+            failure,
+          ),
+        );
+      },
+      (_) {
+        emit(
+          const AuthenticationSuccess(
+            action,
+          ),
+        );
+      },
     );
   }
 
   void reset() {
-    if (!isClosed && state is! AuthenticationLoading) {
-      emit( AuthenticationInitial());
+    if (!isClosed &&
+        state is! AuthenticationLoading) {
+      emit(
+        AuthenticationInitial(),
+      );
     }
   }
 
@@ -156,8 +236,22 @@ class AuthenticationCubit extends Cubit<AuthenticationState> {
     if (isClosed) return;
 
     result.fold(
-      (failure) => emit(_failureState(action, failure)),
-      (user) => emit(AuthenticationSuccess(action, user: user)),
+      (failure) {
+        emit(
+          _failureState(
+            action,
+            failure,
+          ),
+        );
+      },
+      (user) {
+        emit(
+          AuthenticationSuccess(
+            action,
+            user: user,
+          ),
+        );
+      },
     );
   }
 

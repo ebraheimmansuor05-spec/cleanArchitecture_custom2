@@ -1,6 +1,7 @@
 // lib/features/workshop_users_roles/workshop_users_roles_injection.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../core/di/injection_container.dart';
 import 'data/datasources/workshop_users_roles_remote_data_source.dart';
@@ -24,7 +25,8 @@ void initWorkshopUsersRoles() {
   // Data Source
   sl.registerLazySingleton<WorkshopUsersRolesRemoteDataSource>(
     () => FirebaseWorkshopUsersRolesDataSource(
-      sl<FirebaseFirestore>(),
+      sl<FirebaseFirestore>( ),
+      sl<FirebaseFunctions>(),
     ),
   );
 

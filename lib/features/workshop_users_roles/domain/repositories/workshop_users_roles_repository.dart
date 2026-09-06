@@ -1,8 +1,7 @@
-// lib/features/workshop_users_roles/domain/repositories/workshop_users_roles_repository.dart
-
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/failures.dart';
+import '../entities/worker_creation_result_entity.dart';
 import '../entities/workshop_user_entity.dart';
 
 abstract class WorkshopUsersRolesRepository {
@@ -18,4 +17,12 @@ abstract class WorkshopUsersRolesRepository {
   Future<Either<Failure, WorkshopUserEntity?>> getWorkshopUserByUserId(
     String userId,
   );
+
+  Future<Either<Failure, WorkerCreationResultEntity>> createWorker({
+    required String displayName,
+    required String phone,
+    required String password,
+    required String roleId,
+    required String workshopId,
+  });
 }
