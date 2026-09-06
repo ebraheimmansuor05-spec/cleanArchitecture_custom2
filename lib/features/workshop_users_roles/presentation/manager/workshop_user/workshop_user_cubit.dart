@@ -49,7 +49,7 @@ class WorkshopUserCubit extends Cubit<WorkshopUserState>
     );
 
     final result = await runCancelable(
-      _updateWorkshopUserStatusUseCase.call(
+      _updateWorkshopUserStatusUseCase(
         workshopUserId: workshopUserId,
         status: status,
       ),
@@ -64,7 +64,9 @@ class WorkshopUserCubit extends Cubit<WorkshopUserState>
 
     if (failure != null) {
       safeEmit(
-        WorkshopUserError(failure.message),
+        WorkshopUserError(
+          failure.message,
+        ),
       );
       return;
     }

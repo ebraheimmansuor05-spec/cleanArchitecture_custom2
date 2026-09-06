@@ -7,14 +7,34 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function workshopUser(workshopId, userId) {
+      return get(
+        /databases/$(database)/documents/workshop_users/$(userId)
+      ).data.workshopId == workshopId;
+    }
+
+    function isWorkshopOwner(workshopId) {
+      return isSignedIn()
+        && get(
+          /databases/$(database)/documents/workshops/$(workshopId)
+        ).data.ownerId == request.auth.uid;
+    }
+
     function isWorkshopMember(workshopId) {
       return isSignedIn()
         && exists(
-          /databases/$(database)/documents/workshops/$(workshopId)/members/$(request.auth.uid)
-        );
+          /databases/$(database)/documents/workshop_users/$(request.auth.uid)
+        )
+        && workshopUser(workshopId, request.auth.uid);
     }
 
     match /workshops/{workshopId} {
+      allow read: if isWorkshopMember(workshopId);
+
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid;
+
+      allow update, delete: if isWorkshopOwner(workshopId);
 
       match /members/{memberId} {
         allow read: if isWorkshopMember(workshopId);
@@ -25,6 +45,25 @@ service cloud.firestore {
         allow read: if isWorkshopMember(workshopId);
         allow create, update, delete: if false;
       }
+    }
+
+    match /workshop_users/{workshopUserId} {
+      allow read: if isSignedIn()
+        && (
+          resource.data.userId == request.auth.uid
+          || isWorkshopOwner(resource.data.workshopId)
+        );
+
+      allow create, update, delete: if false;
+    }
+
+    match /roles/{roleId} {
+      allow read: if isSignedIn()
+        && (
+          resource.data.workshopId != null
+        );
+
+      allow create, update, delete: if false;
     }
   }
 }

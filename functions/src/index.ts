@@ -1,12 +1,12 @@
 import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import {
-  getFirestore,
   FieldValue,
+  getFirestore,
 } from "firebase-admin/firestore";
 import {
-  onCall,
   HttpsError,
+  onCall,
 } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
 
@@ -25,7 +25,220 @@ interface CreateWorkerData {
 
 interface UpdateWorkshopUserStatusData {
   workshopUserId: string;
-  status: string;
+  status: "active" | "suspended" | "removed";
+  workshopId: string;
+}
+
+interface CreateRoleData {
+  workshopId: string;
+  name: string;
+  description: string;
+  permissions: string[];
+  isSystemRole: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UpdateRoleData extends CreateRoleData {
+  roleId: string;
+}
+
+interface DeleteRoleData {
+  workshopId: string;
+  roleId: string;
+}
+
+const allowedStatuses = new Set([
+  "active",
+  "suspended",
+  "removed",
+]);
+
+const userManagementPermissions = {
+  active: "usersUpdate",
+  suspended: "usersSuspend",
+  removed: "usersRemove",
+} as const;
+
+async function getWorkshopUserForCaller(
+  callerUid: string,
+  workshopId: string,
+) {
+  const snapshot = await db
+    .collection("workshop_users")
+    .where("userId", "==", callerUid)
+    .where("workshopId", "==", workshopId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  return snapshot.docs[0].data();
+}
+
+async function callerHasWorkshopPermission(
+  callerUid: string,
+  workshopId: string,
+  permission: string,
+): Promise<boolean> {
+  const workshopSnapshot = await db
+    .collection("workshops")
+    .doc(workshopId)
+    .get();
+
+  if (!workshopSnapshot.exists) {
+    return false;
+  }
+
+  const workshop = workshopSnapshot.data();
+
+  if (!workshop) {
+    return false;
+  }
+
+  if (workshop.ownerId === callerUid) {
+    return true;
+  }
+
+  const membership = await getWorkshopUserForCaller(
+    callerUid,
+    workshopId,
+  );
+
+  if (!membership) {
+    return false;
+  }
+
+  if (membership.status !== "active") {
+    return false;
+  }
+
+  const roleId = membership.roleId;
+
+  if (
+    typeof roleId !== "string" ||
+    roleId.length === 0
+  ) {
+    return false;
+  }
+
+  const roleSnapshot = await db
+    .collection("roles")
+    .doc(roleId)
+    .get();
+
+  if (!roleSnapshot.exists) {
+    return false;
+  }
+
+  const role = roleSnapshot.data();
+
+  if (!role) {
+    return false;
+  }
+
+  if (role.workshopId !== workshopId) {
+    return false;
+  }
+
+  const permissions = role.permissions;
+
+  if (!Array.isArray(permissions)) {
+    return false;
+  }
+
+  return permissions.includes(permission);
+}
+
+async function requireWorkshopPermission(
+  callerUid: string,
+  workshopId: string,
+  permission: string,
+): Promise<void> {
+  const hasPermission =
+    await callerHasWorkshopPermission(
+      callerUid,
+      workshopId,
+      permission,
+    );
+
+  if (!hasPermission) {
+    throw new HttpsError(
+      "permission-denied",
+      "You do not have permission to perform this operation.",
+    );
+  }
+}
+
+function validateRolePermissions(
+  permissions: unknown,
+): string[] {
+  if (!Array.isArray(permissions)) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Role permissions must be an array.",
+    );
+  }
+
+  const normalizedPermissions = permissions
+    .filter(
+      (permission): permission is string =>
+        typeof permission === "string",
+    )
+    .map((permission) => permission.trim())
+    .filter((permission) => permission.length > 0);
+
+  if (
+    normalizedPermissions.length !==
+    permissions.length
+  ) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Role permissions contain invalid values.",
+    );
+  }
+
+  return [...new Set(normalizedPermissions)];
+}
+
+async function getRoleForWorkshop(
+  roleId: string,
+  workshopId: string,
+) {
+  const roleSnapshot = await db
+    .collection("roles")
+    .doc(roleId)
+    .get();
+
+  if (!roleSnapshot.exists) {
+    throw new HttpsError(
+      "not-found",
+      "Role was not found.",
+    );
+  }
+
+  const role = roleSnapshot.data();
+
+  if (!role) {
+    throw new HttpsError(
+      "not-found",
+      "Role was not found.",
+    );
+  }
+
+  if (role.workshopId !== workshopId) {
+    throw new HttpsError(
+      "permission-denied",
+      "Role does not belong to this workshop.",
+    );
+  }
+
+  return {
+    snapshot: roleSnapshot,
+    data: role,
+  };
 }
 
 export const createWorker = onCall(
@@ -139,7 +352,10 @@ export const createWorker = onCall(
 
     const role = roleSnapshot.data();
 
-    if (!role || role.workshopId !== workshopId) {
+    if (
+      !role ||
+      role.workshopId !== workshopId
+    ) {
       throw new HttpsError(
         "permission-denied",
         "Role does not belong to this workshop.",
@@ -244,33 +460,44 @@ export const updateWorkshopUserStatus = onCall(
         ? data.workshopUserId.trim()
         : "";
 
-    const status =
-      typeof data.status === "string"
-        ? data.status.trim()
+    const workshopId =
+      typeof data.workshopId === "string"
+        ? data.workshopId.trim()
         : "";
+
+    const status = data.status;
 
     if (!workshopUserId) {
       throw new HttpsError(
         "invalid-argument",
-        "Workshop user id is required.",
+        "Workshop user ID is required.",
       );
     }
 
-    const allowedStatuses = [
-      "pending",
-      "active",
-      "suspended",
-      "removed",
-    ];
-
-    if (!allowedStatuses.includes(status)) {
+    if (!workshopId) {
       throw new HttpsError(
         "invalid-argument",
-        "Invalid workshop member status.",
+        "Workshop ID is required.",
       );
     }
 
-    const ownerId = request.auth.uid;
+    if (
+      typeof status !== "string" ||
+      !allowedStatuses.has(status)
+    ) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Invalid workshop user status.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+
+    await requireWorkshopPermission(
+      callerUid,
+      workshopId,
+      userManagementPermissions[status],
+    );
 
     const workshopUserRef = db
       .collection("workshop_users")
@@ -289,24 +516,107 @@ export const updateWorkshopUserStatus = onCall(
     const workshopUser =
       workshopUserSnapshot.data();
 
-    if (!workshopUser) {
+    if (
+      !workshopUser ||
+      workshopUser.workshopId !== workshopId
+    ) {
       throw new HttpsError(
-        "not-found",
-        "Workshop user data was not found.",
+        "permission-denied",
+        "Workshop user does not belong to this workshop.",
       );
     }
 
+    await workshopUserRef.update({
+      status,
+      updatedAt: FieldValue.serverTimestamp(),
+      updatedBy: callerUid,
+    });
+
+    logger.info(
+      "Workshop user status updated.",
+      {
+        workshopUserId,
+        workshopId,
+        status,
+        updatedBy: callerUid,
+      },
+    );
+
+    return {
+      success: true,
+      workshopUserId,
+      status,
+    };
+  },
+);
+
+export const createRole = onCall(
+  {
+    region: "africa-south1",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Authentication is required.",
+      );
+    }
+
+    const data = request.data as CreateRoleData;
+
     const workshopId =
-      typeof workshopUser.workshopId === "string"
-        ? workshopUser.workshopId
+      typeof data.workshopId === "string"
+        ? data.workshopId.trim()
         : "";
+
+    const name =
+      typeof data.name === "string"
+        ? data.name.trim()
+        : "";
+
+    const description =
+      typeof data.description === "string"
+        ? data.description.trim()
+        : "";
+
+    const permissions =
+      validateRolePermissions(data.permissions);
 
     if (!workshopId) {
       throw new HttpsError(
-        "failed-precondition",
-        "Workshop user has no workshop.",
+        "invalid-argument",
+        "Workshop ID is required.",
       );
     }
+
+    if (!name) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Role name is required.",
+      );
+    }
+
+    if (typeof data.isSystemRole !== "boolean") {
+      throw new HttpsError(
+        "invalid-argument",
+        "isSystemRole must be a boolean.",
+      );
+    }
+
+    if (data.isSystemRole) {
+      throw new HttpsError(
+        "permission-denied",
+        "System roles cannot be created manually.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+
+    await requireWorkshopPermission(
+      callerUid,
+      workshopId,
+      "rolesCreate",
+    );
 
     const workshopSnapshot = await db
       .collection("workshops")
@@ -320,39 +630,274 @@ export const updateWorkshopUserStatus = onCall(
       );
     }
 
-    const workshop = workshopSnapshot.data();
+    const now = new Date().toISOString();
 
-    if (!workshop || workshop.ownerId !== ownerId) {
-      throw new HttpsError(
-        "permission-denied",
-        "Only the workshop owner can change member status.",
-      );
-    }
+    const roleRef = db
+      .collection("roles")
+      .doc();
 
-    await workshopUserRef.update({
-      status,
-      updatedAt: FieldValue.serverTimestamp(),
-      updatedBy: ownerId,
+    await roleRef.set({
+      name,
+      description,
+      workshopId,
+      permissions,
+      isSystemRole: false,
+      createdAt:
+        typeof data.createdAt === "string" &&
+        data.createdAt.trim().length > 0
+          ? data.createdAt
+          : now,
+      updatedAt:
+        typeof data.updatedAt === "string" &&
+        data.updatedAt.trim().length > 0
+          ? data.updatedAt
+          : now,
     });
 
-    const updatedSnapshot =
-      await workshopUserRef.get();
+    const createdSnapshot =
+      await roleRef.get();
 
-    const updatedData =
-      updatedSnapshot.data();
+    const createdRole =
+      createdSnapshot.data();
 
-    if (!updatedData) {
+    if (!createdRole) {
       throw new HttpsError(
         "internal",
-        "Updated workshop user could not be read.",
+        "Role was created but could not be read.",
       );
     }
 
-    return {
-      workshopUser: {
-        ...updatedData,
-        id: workshopUserRef.id,
+    logger.info(
+      "Role created successfully.",
+      {
+        roleId: roleRef.id,
+        workshopId,
+        createdBy: callerUid,
       },
+    );
+
+    return {
+      id: roleRef.id,
+      ...createdRole,
+    };
+  },
+);
+
+export const updateRole = onCall(
+  {
+    region: "africa-south1",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Authentication is required.",
+      );
+    }
+
+    const data = request.data as UpdateRoleData;
+
+    const roleId =
+      typeof data.roleId === "string"
+        ? data.roleId.trim()
+        : "";
+
+    const workshopId =
+      typeof data.workshopId === "string"
+        ? data.workshopId.trim()
+        : "";
+
+    const name =
+      typeof data.name === "string"
+        ? data.name.trim()
+        : "";
+
+    const description =
+      typeof data.description === "string"
+        ? data.description.trim()
+        : "";
+
+    const permissions =
+      validateRolePermissions(data.permissions);
+
+    if (!roleId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Role ID is required.",
+      );
+    }
+
+    if (!workshopId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Workshop ID is required.",
+      );
+    }
+
+    if (!name) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Role name is required.",
+      );
+    }
+
+    if (typeof data.isSystemRole !== "boolean") {
+      throw new HttpsError(
+        "invalid-argument",
+        "isSystemRole must be a boolean.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+
+    await requireWorkshopPermission(
+      callerUid,
+      workshopId,
+      "rolesUpdate",
+    );
+
+    const role = await getRoleForWorkshop(
+      roleId,
+      workshopId,
+    );
+
+    if (role.data.isSystemRole === true) {
+      throw new HttpsError(
+        "permission-denied",
+        "System roles cannot be modified.",
+      );
+    }
+
+    const updatedAt =
+      typeof data.updatedAt === "string" &&
+      data.updatedAt.trim().length > 0
+        ? data.updatedAt
+        : new Date().toISOString();
+
+    await db
+      .collection("roles")
+      .doc(roleId)
+      .set({
+        name,
+        description,
+        workshopId,
+        permissions,
+        isSystemRole: false,
+        createdAt:
+          typeof role.data.createdAt === "string"
+            ? role.data.createdAt
+            : new Date().toISOString(),
+        updatedAt,
+      });
+
+    const updatedSnapshot =
+      await db
+        .collection("roles")
+        .doc(roleId)
+        .get();
+
+    const updatedRole =
+      updatedSnapshot.data();
+
+    if (!updatedRole) {
+      throw new HttpsError(
+        "internal",
+        "Role was updated but could not be read.",
+      );
+    }
+
+    logger.info(
+      "Role updated successfully.",
+      {
+        roleId,
+        workshopId,
+        updatedBy: callerUid,
+      },
+    );
+
+    return {
+      id: roleId,
+      ...updatedRole,
+    };
+  },
+);
+
+export const deleteRole = onCall(
+  {
+    region: "africa-south1",
+  },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Authentication is required.",
+      );
+    }
+
+    const data = request.data as DeleteRoleData;
+
+    const roleId =
+      typeof data.roleId === "string"
+        ? data.roleId.trim()
+        : "";
+
+    const workshopId =
+      typeof data.workshopId === "string"
+        ? data.workshopId.trim()
+        : "";
+
+    if (!roleId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Role ID is required.",
+      );
+    }
+
+    if (!workshopId) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Workshop ID is required.",
+      );
+    }
+
+    const callerUid = request.auth.uid;
+
+    await requireWorkshopPermission(
+      callerUid,
+      workshopId,
+      "rolesDelete",
+    );
+
+    const role = await getRoleForWorkshop(
+      roleId,
+      workshopId,
+    );
+
+    if (role.data.isSystemRole === true) {
+      throw new HttpsError(
+        "permission-denied",
+        "System roles cannot be deleted.",
+      );
+    }
+
+    await db
+      .collection("roles")
+      .doc(roleId)
+      .delete();
+
+    logger.info(
+      "Role deleted successfully.",
+      {
+        roleId,
+        workshopId,
+        deletedBy: callerUid,
+      },
+    );
+
+    return {
+      success: true,
+      roleId,
+      workshopId,
     };
   },
 );
