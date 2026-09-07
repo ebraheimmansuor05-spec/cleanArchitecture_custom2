@@ -93,6 +93,7 @@ class _DashboardStateBody extends StatelessWidget {
       DashboardLoadStatus.initial ||
       DashboardLoadStatus.loading => const DashboardLoadingView(),
       DashboardLoadStatus.empty => DashboardEmptyView(onRetry: onRetry),
+      DashboardLoadStatus.unavailable => const DashboardUnavailableView(),
       DashboardLoadStatus.failure => DashboardFailureView(onRetry: onRetry),
       DashboardLoadStatus.loaded ||
       DashboardLoadStatus.partial => _DashboardContentView(

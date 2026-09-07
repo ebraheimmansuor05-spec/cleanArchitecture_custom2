@@ -36,13 +36,13 @@ void main() {
     );
   });
 
-  test('authenticated user leaves login for neutral session boundary', () {
+  test('authenticated user leaves login for Dashboard', () {
     expect(
       authenticationRedirect(
         sessionState: const SessionAuthenticated(testUser),
         location: RouteNames.kLoginPage,
       ),
-      RouteNames.kAccountSessionPage,
+      RouteNames.kDashboardPage,
     );
   });
 

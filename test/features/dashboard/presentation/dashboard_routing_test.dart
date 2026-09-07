@@ -31,4 +31,14 @@ void main() {
       isNull,
     );
   });
+
+  test('authenticated user leaves a public route for Dashboard', () {
+    expect(
+      authenticationRedirect(
+        sessionState: const SessionAuthenticated(_authenticatedUser),
+        location: RouteNames.kLoginPage,
+      ),
+      RouteNames.kDashboardPage,
+    );
+  });
 }

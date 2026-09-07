@@ -2,9 +2,17 @@ import 'package:equatable/equatable.dart';
 
 import '../models/dashboard_preview_content.dart';
 
-enum DashboardLoadStatus { initial, loading, loaded, empty, partial, failure }
+enum DashboardLoadStatus {
+  initial,
+  loading,
+  loaded,
+  empty,
+  partial,
+  unavailable,
+  failure,
+}
 
-enum DashboardFailureReason { unavailable }
+enum DashboardFailureReason { unexpected }
 
 class DashboardActionNotice extends Equatable {
   final int id;
@@ -45,6 +53,9 @@ class DashboardState extends Equatable {
       );
 
   const DashboardState.empty() : this._(status: DashboardLoadStatus.empty);
+
+  const DashboardState.unavailable()
+    : this._(status: DashboardLoadStatus.unavailable);
 
   const DashboardState.partial({
     required DashboardPreviewContent content,

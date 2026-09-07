@@ -12,28 +12,47 @@ void main() {
     await cubit.close();
   });
 
-  test('load emits loading then approved source preview', () async {
-    final cubit = DashboardCubit();
-    final states = <DashboardState>[];
-    final subscription = cubit.stream.listen(states.add);
+  test(
+    'production load reports unavailable data without preview fallback',
+    () async {
+      final cubit = DashboardCubit();
+      final states = <DashboardState>[];
+      final subscription = cubit.stream.listen(states.add);
 
-    cubit.load();
-    await Future<void>.delayed(Duration.zero);
+      cubit.load();
+      await Future<void>.delayed(Duration.zero);
 
-    expect(states, [
-      const DashboardState.loading(),
+      expect(states, [
+        const DashboardState.loading(),
+        const DashboardState.unavailable(),
+      ]);
+      expect(cubit.state.content, isNull);
+      expect(cubit.state.isSourcePreview, isFalse);
+
+      await subscription.cancel();
+      await cubit.close();
+    },
+  );
+
+  test('approved design preview remains an explicit test-only state', () async {
+    final cubit = DashboardCubit.withInitialState(
       const DashboardState.preview(
         DashboardPreviewContent.fromApprovedDesign(),
       ),
-    ]);
+    );
+
+    expect(cubit.state.status, DashboardLoadStatus.loaded);
     expect(cubit.state.isSourcePreview, isTrue);
 
-    await subscription.cancel();
     await cubit.close();
   });
 
   test('unavailable action feedback preserves displayed content', () async {
-    final cubit = DashboardCubit()..load();
+    final cubit = DashboardCubit.withInitialState(
+      const DashboardState.preview(
+        DashboardPreviewContent.fromApprovedDesign(),
+      ),
+    );
     final contentBeforeAction = cubit.state.content;
 
     cubit.requestAction(DashboardAction.newOrder);
@@ -49,7 +68,11 @@ void main() {
   });
 
   test('selecting the current Home destination is a safe no-op', () async {
-    final cubit = DashboardCubit()..load();
+    final cubit = DashboardCubit.withInitialState(
+      const DashboardState.preview(
+        DashboardPreviewContent.fromApprovedDesign(),
+      ),
+    );
     final stateBeforeAction = cubit.state;
 
     cubit.requestAction(DashboardAction.home);

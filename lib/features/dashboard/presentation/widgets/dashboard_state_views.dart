@@ -157,6 +157,48 @@ class DashboardFailureView extends StatelessWidget {
   }
 }
 
+class DashboardUnavailableView extends StatelessWidget {
+  const DashboardUnavailableView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    return _DashboardCenteredState(
+      child: Padding(
+        key: const Key('dashboard-unavailable'),
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.layers_clear_outlined,
+              size: 64,
+              color: colors.onSurface.withValues(alpha: 0.48),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'dashboard.states.failure_title'.tr(),
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'dashboard.states.empty_message'.tr(),
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colors.onSurface.withValues(alpha: 0.62),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class DashboardPartialBanner extends StatelessWidget {
   final List<DashboardSection> unavailableSections;
 

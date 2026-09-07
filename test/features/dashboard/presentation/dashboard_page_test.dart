@@ -81,7 +81,11 @@ void main() {
   testWidgets('renders all major source-backed Dashboard sections', (
     tester,
   ) async {
-    final cubit = DashboardCubit()..load();
+    final cubit = DashboardCubit.withInitialState(
+      const DashboardState.preview(
+        DashboardPreviewContent.fromApprovedDesign(),
+      ),
+    );
     addTearDown(cubit.close);
 
     await pumpDashboard(tester, cubit: cubit);
@@ -111,7 +115,11 @@ void main() {
   testWidgets('quick action reaches DashboardCubit and reports deferral', (
     tester,
   ) async {
-    final cubit = DashboardCubit()..load();
+    final cubit = DashboardCubit.withInitialState(
+      const DashboardState.preview(
+        DashboardPreviewContent.fromApprovedDesign(),
+      ),
+    );
     addTearDown(cubit.close);
 
     await pumpDashboard(tester, cubit: cubit);
@@ -127,25 +135,25 @@ void main() {
     );
   });
 
-  testWidgets('loading, empty, partial, and failure states are renderable', (
+  testWidgets('loading, empty, partial, unavailable, and failure render', (
     tester,
   ) async {
-    final loadingCubit = DashboardCubit(
-      initialState: const DashboardState.loading(),
+    final loadingCubit = DashboardCubit.withInitialState(
+      const DashboardState.loading(),
     );
     await pumpDashboard(tester, cubit: loadingCubit, settle: false);
     expect(find.byKey(const Key('dashboard-loading')), findsOneWidget);
     await loadingCubit.close();
 
-    final emptyCubit = DashboardCubit(
-      initialState: const DashboardState.empty(),
+    final emptyCubit = DashboardCubit.withInitialState(
+      const DashboardState.empty(),
     );
     await pumpDashboard(tester, cubit: emptyCubit);
     expect(find.text('No dashboard data'), findsOneWidget);
     await emptyCubit.close();
 
-    final partialCubit = DashboardCubit(
-      initialState: const DashboardState.partial(
+    final partialCubit = DashboardCubit.withInitialState(
+      const DashboardState.partial(
         content: DashboardPreviewContent.fromApprovedDesign(),
         unavailableSections: [DashboardSection.financial],
       ),
@@ -159,21 +167,46 @@ void main() {
     );
     await partialCubit.close();
 
-    final failureCubit = DashboardCubit(
-      initialState: const DashboardState.failure(
-        DashboardFailureReason.unavailable,
-      ),
+    final unavailableCubit = DashboardCubit.withInitialState(
+      const DashboardState.unavailable(),
+    );
+    await pumpDashboard(tester, cubit: unavailableCubit);
+    expect(find.byKey(const Key('dashboard-unavailable')), findsOneWidget);
+    expect(find.text(r'$42,850'), findsNothing);
+    await unavailableCubit.close();
+
+    final failureCubit = DashboardCubit.withInitialState(
+      const DashboardState.failure(DashboardFailureReason.unexpected),
     );
     await pumpDashboard(tester, cubit: failureCubit);
     expect(find.text('Dashboard unavailable'), findsOneWidget);
     await tester.tap(find.text('Try again'));
     await tester.pump();
-    expect(find.text('Workshop Overview'), findsOneWidget);
+    expect(find.byKey(const Key('dashboard-unavailable')), findsOneWidget);
+    expect(find.text('Workshop Overview'), findsNothing);
     await failureCubit.close();
   });
 
-  testWidgets('Arabic Dashboard is RTL and fits a small phone', (tester) async {
+  testWidgets('production load never exposes approved design fixture values', (
+    tester,
+  ) async {
     final cubit = DashboardCubit()..load();
+    addTearDown(cubit.close);
+
+    await pumpDashboard(tester, cubit: cubit);
+
+    expect(find.byKey(const Key('dashboard-unavailable')), findsOneWidget);
+    expect(find.text(r'$42,850'), findsNothing);
+    expect(find.text('Marcus Chen'), findsNothing);
+    expect(find.text('12'), findsNothing);
+  });
+
+  testWidgets('Arabic Dashboard is RTL and fits a small phone', (tester) async {
+    final cubit = DashboardCubit.withInitialState(
+      const DashboardState.preview(
+        DashboardPreviewContent.fromApprovedDesign(),
+      ),
+    );
     addTearDown(cubit.close);
 
     await pumpDashboard(

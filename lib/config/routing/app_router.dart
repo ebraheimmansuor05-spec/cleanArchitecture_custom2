@@ -155,7 +155,7 @@ String? authenticationRedirect({
 
   if (sessionState.isAuthenticated) {
     if (isSessionCheck || isPublic) {
-      return RouteNames.kAccountSessionPage;
+      return RouteNames.kDashboardPage;
     }
 
     return null;
