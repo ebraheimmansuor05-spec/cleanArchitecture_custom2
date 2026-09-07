@@ -1,47 +1,59 @@
 import '../../domain/entities/worker_creation_result_entity.dart';
-import '../../domain/enums/workshop_member_status.dart';
-import 'workshop_user_model.dart';
 
-class WorkerCreationResultModel {
-  final String workerLoginId;
-  final String temporaryPassword;
-  final WorkshopUserModel workshopUser;
-
+class WorkerCreationResultModel extends WorkerCreationResultEntity {
   const WorkerCreationResultModel({
-    required this.workerLoginId,
-    required this.temporaryPassword,
-    required this.workshopUser,
+    required super.workerId,
+    required super.workerLoginId,
+    required super.temporaryPassword,
+    required super.workshopUserId,
   });
 
-  factory WorkerCreationResultModel.fromMap(Map<String, dynamic> map) {
-    final workshopUserData = Map<String, dynamic>.from(
-      map['workshopUser'] as Map,
-    );
+  factory WorkerCreationResultModel.fromMap(
+    Map<String, dynamic> map,
+  ) {
+    final workerId = map['workerId'];
+    final workerLoginId = map['workerLoginId'];
+    final temporaryPassword = map['temporaryPassword'];
+    final workshopUserId = map['workshopUserId'];
+
+    if (workerId is! String || workerId.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid workerId in createWorker response.',
+      );
+    }
+
+    if (workerLoginId is! String || workerLoginId.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid workerLoginId in createWorker response.',
+      );
+    }
+
+    if (temporaryPassword is! String || temporaryPassword.isEmpty) {
+      throw const FormatException(
+        'Invalid temporaryPassword in createWorker response.',
+      );
+    }
+
+    if (workshopUserId is! String || workshopUserId.trim().isEmpty) {
+      throw const FormatException(
+        'Invalid workshopUserId in createWorker response.',
+      );
+    }
 
     return WorkerCreationResultModel(
-      workerLoginId: map['workerLoginId'] as String,
-      temporaryPassword: map['temporaryPassword'] as String,
-      workshopUser: WorkshopUserModel(
-        id: workshopUserData['id'] as String,
-        workshopId: workshopUserData['workshopId'] as String,
-        userId: workshopUserData['userId'] as String,
-        roleId: workshopUserData['roleId'] as String,
-        status: WorkshopMemberStatus.values.byName(
-          workshopUserData['status'] as String,
-        ),
-        joinedAt: DateTime.parse(
-          workshopUserData['joinedAt'] as String,
-        ),
-        workerId: workshopUserData['workerId'] as String?,
-      ),
+      workerId: workerId,
+      workerLoginId: workerLoginId,
+      temporaryPassword: temporaryPassword,
+      workshopUserId: workshopUserId,
     );
   }
 
   WorkerCreationResultEntity toEntity() {
     return WorkerCreationResultEntity(
+      workerId: workerId,
       workerLoginId: workerLoginId,
       temporaryPassword: temporaryPassword,
-      workshopUser: workshopUser.toEntity(),
+      workshopUserId: workshopUserId,
     );
   }
 }

@@ -13,10 +13,11 @@ import 'domain/repositories/workshop_repository.dart';
 import 'domain/repositories/workshop_users_roles_repository.dart';
 import 'domain/usecases/create_workshop_usecase.dart';
 import 'domain/usecases/create_worker_usecase.dart';
+import 'domain/usecases/get_roles_usecase.dart';
 import 'domain/usecases/get_workshop_by_owner_id_usecase.dart';
 import 'domain/usecases/get_workshop_usecase.dart';
 import 'domain/usecases/get_workshop_users_usecase.dart';
-import 'domain/usecases/get_roles_usecase.dart';
+import 'domain/usecases/ib/features/workshop_users_roles/domain/update_workshop_user_status_usecase.dart';
 import 'presentation/manager/role/role_cubit.dart';
 import 'presentation/manager/workshop_user/workshop_cubit.dart';
 import 'presentation/manager/workshop_user/workshop_user_cubit.dart';
@@ -25,7 +26,7 @@ void initWorkshopUsersRoles() {
   // Data Source
   sl.registerLazySingleton<WorkshopUsersRolesRemoteDataSource>(
     () => FirebaseWorkshopUsersRolesDataSource(
-      sl<FirebaseFirestore>( ),
+      sl<FirebaseFirestore>(),
       sl<FirebaseFunctions>(),
     ),
   );
@@ -87,10 +88,17 @@ void initWorkshopUsersRoles() {
     ),
   );
 
+  sl.registerLazySingleton<UpdateWorkshopUserStatusUseCase>(
+    () => UpdateWorkshopUserStatusUseCase(
+      sl<WorkshopUsersRolesRepository>(),
+    ),
+  );
+
   // Cubits
   sl.registerFactory<WorkshopUserCubit>(
     () => WorkshopUserCubit(
       sl<GetWorkshopUsersUseCase>(),
+      sl<UpdateWorkshopUserStatusUseCase>(),
     ),
   );
 

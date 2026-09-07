@@ -1,22 +1,23 @@
 import 'package:equatable/equatable.dart';
 
-import 'workshop_user_entity.dart';
-
 class WorkerCreationResultEntity extends Equatable {
+  final String workerId;
   final String workerLoginId;
   final String temporaryPassword;
-  final WorkshopUserEntity workshopUser;
+  final String workshopUserId;
 
   const WorkerCreationResultEntity({
+    required this.workerId,
     required this.workerLoginId,
     required this.temporaryPassword,
-    required this.workshopUser,
+    required this.workshopUserId,
   });
 
   @override
   List<Object?> get props => [
+        workerId,
         workerLoginId,
         temporaryPassword,
-        workshopUser,
+        workshopUserId,
       ];
 }

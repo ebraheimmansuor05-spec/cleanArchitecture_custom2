@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../domain/enums/workshop_member_status.dart';
 import '../models/role_model.dart';
 import '../models/workshop_model.dart';
 import '../models/workshop_user_model.dart';
@@ -30,6 +31,11 @@ abstract class WorkshopUsersRolesRemoteDataSource {
   });
 
   Future<WorkshopUserModel?> getWorkshopUserByUserId(String userId);
+
+  Future<WorkshopUserModel> updateWorkshopUserStatus({
+    required String workshopUserId,
+    required WorkshopMemberStatus status,
+  });
 
   Future<WorkerCreationResultModel> createWorker({
     required String displayName,
@@ -119,7 +125,9 @@ class FirebaseWorkshopUsersRolesDataSource
   }
 
   @override
-  Future<List<RoleModel>> getRoles(String workshopId) async {
+  Future<List<RoleModel>> getRoles(
+    String workshopId,
+  ) async {
     final snapshot = await _firestore
         .collection('roles')
         .where(
@@ -139,7 +147,9 @@ class FirebaseWorkshopUsersRolesDataSource
   }
 
   @override
-  Future<RoleModel> createRole(RoleModel role) async {
+  Future<RoleModel> createRole(
+    RoleModel role,
+  ) async {
     final data = role.toJson();
     data.remove('id');
 
@@ -163,7 +173,9 @@ class FirebaseWorkshopUsersRolesDataSource
   }
 
   @override
-  Future<RoleModel> updateRole(RoleModel role) async {
+  Future<RoleModel> updateRole(
+    RoleModel role,
+  ) async {
     if (role.id.trim().isEmpty) {
       throw ArgumentError(
         'Cannot update a role without a role id.',
@@ -305,6 +317,45 @@ class FirebaseWorkshopUsersRolesDataSource
 
     return WorkshopUserModel.fromFirestore(
       snapshot.docs.first,
+    );
+  }
+
+  @override
+  Future<WorkshopUserModel> updateWorkshopUserStatus({
+    required String workshopUserId,
+    required WorkshopMemberStatus status,
+  }) async {
+    final normalizedId = workshopUserId.trim();
+
+    if (normalizedId.isEmpty) {
+      throw ArgumentError(
+        'Workshop user id is required.',
+      );
+    }
+
+    final callable = _functions.httpsCallable(
+      'updateWorkshopUserStatus',
+    );
+
+    final result = await callable.call({
+      'workshopUserId': normalizedId,
+      'status': status.name,
+    });
+
+    final data = Map<String, dynamic>.from(
+      result.data as Map,
+    );
+
+    final updatedUser = data['workshopUser'];
+
+    if (updatedUser is! Map) {
+      throw StateError(
+        'Invalid workshop user response.',
+      );
+    }
+
+    return WorkshopUserModel.fromMap(
+      Map<String, dynamic>.from(updatedUser),
     );
   }
 
