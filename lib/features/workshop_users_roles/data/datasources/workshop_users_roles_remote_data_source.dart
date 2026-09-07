@@ -8,17 +8,29 @@ import '../models/workshop_user_model.dart';
 import '../models/worker_creation_result_model.dart';
 
 abstract class WorkshopUsersRolesRemoteDataSource {
-  Future<List<WorkshopUserModel>> getWorkshopUsers(String workshopId);
+  Future<List<WorkshopUserModel>> getWorkshopUsers(
+    String workshopId,
+  );
 
-  Future<WorkshopModel?> getWorkshop(String workshopId);
+  Future<WorkshopModel?> getWorkshop(
+    String workshopId,
+  );
 
-  Future<WorkshopModel> createWorkshop(WorkshopModel workshop);
+  Future<WorkshopModel> createWorkshop(
+    WorkshopModel workshop,
+  );
 
-  Future<List<RoleModel>> getRoles(String workshopId);
+  Future<List<RoleModel>> getRoles(
+    String workshopId,
+  );
 
-  Future<RoleModel> createRole(RoleModel role);
+  Future<RoleModel> createRole(
+    RoleModel role,
+  );
 
-  Future<RoleModel> updateRole(RoleModel role);
+  Future<RoleModel> updateRole(
+    RoleModel role,
+  );
 
   Future<void> deleteRole(
     String workshopId,
@@ -30,7 +42,9 @@ abstract class WorkshopUsersRolesRemoteDataSource {
     required String workerId,
   });
 
-  Future<WorkshopUserModel?> getWorkshopUserByUserId(String userId);
+  Future<WorkshopUserModel?> getWorkshopUserByUserId(
+    String userId,
+  );
 
   Future<WorkshopUserModel> updateWorkshopUserStatus({
     required String workshopUserId,
@@ -333,29 +347,74 @@ class FirebaseWorkshopUsersRolesDataSource
       );
     }
 
+    final workshopUserRef = _firestore
+        .collection('workshop_users')
+        .doc(normalizedId);
+
+    final workshopUserSnapshot =
+        await workshopUserRef.get();
+
+    if (!workshopUserSnapshot.exists) {
+      throw StateError(
+        'Workshop user was not found.',
+      );
+    }
+
+    final workshopUserData =
+        workshopUserSnapshot.data();
+
+    if (workshopUserData == null) {
+      throw StateError(
+        'Workshop user document contains no data.',
+      );
+    }
+
+    final workshopId =
+        workshopUserData['workshopId'];
+
+    if (workshopId is! String ||
+        workshopId.trim().isEmpty) {
+      throw StateError(
+        'Workshop user does not contain a valid workshop id.',
+      );
+    }
+
     final callable = _functions.httpsCallable(
       'updateWorkshopUserStatus',
     );
 
     final result = await callable.call({
       'workshopUserId': normalizedId,
+      'workshopId': workshopId,
       'status': status.name,
     });
 
-    final data = Map<String, dynamic>.from(
-      result.data as Map,
-    );
+    final responseData =
+        result.data is Map
+            ? Map<String, dynamic>.from(
+                result.data as Map,
+              )
+            : <String, dynamic>{};
 
-    final updatedUser = data['workshopUser'];
+    final success = responseData['success'];
 
-    if (updatedUser is! Map) {
+    if (success != true) {
       throw StateError(
-        'Invalid workshop user response.',
+        'Workshop user status update was not confirmed.',
       );
     }
 
-    return WorkshopUserModel.fromMap(
-      Map<String, dynamic>.from(updatedUser),
+    final updatedSnapshot =
+        await workshopUserRef.get();
+
+    if (!updatedSnapshot.exists) {
+      throw StateError(
+        'Workshop user was updated but could not be read afterwards.',
+      );
+    }
+
+    return WorkshopUserModel.fromFirestore(
+      updatedSnapshot,
     );
   }
 
