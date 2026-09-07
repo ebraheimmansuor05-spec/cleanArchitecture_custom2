@@ -72,13 +72,10 @@
       "network": "تحقق من اتصالك بالإنترنت وحاول مرة أخرى.",
       "operation_not_allowed": "عملية المصادقة هذه غير متاحة.",
       "session_expired": "انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.",
-      "unknown": "تعذر إكمال عملية المصادقة. حاول مرة أخرى.",
-    "navigation": {
-        "home": "Home",
-        "cart": "Cart",
-        "profile": "Profile"
-    },
-    "dashboard": {
+      "unknown": "تعذر إكمال عملية المصادقة. حاول مرة أخرى."
+    }
+  },
+  "dashboard": {
         "title": "Dashboard",
         "workshop_overview": "Workshop Overview",
         "workshop_overview_subtitle": "Manage production, inventory & finances in real-time.",
@@ -146,7 +143,6 @@
             "partial_message": "Some dashboard sections are unavailable. Available information is still shown.",
             "retry": "Try again"
         }
-    }
   },
 
   "navigation": {
@@ -154,5 +150,4 @@
     "cart": "السلة",
     "profile": "الملف الشخصي"
   }
-}
 }
